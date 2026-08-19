@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Tài chính Công ty — VONE</title>
+<style>
+
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --surface-page:   #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6; /* Chi phí */
+    --series-2:       #eb6834; /* Thưởng */
+    --series-3:       #1baf7a; /* Lợi nhuận sau thưởng */
+    --series-4:       #7c5cd1; /* Tổng thu (Folder 2/3) */
+    --series-1-tint:  #6aa8e6; /* Chi phí dự phòng — sắc nhạt của series-1 */
+    --status-critical:#d03b3b;
+    --status-critical-bg: #fbeceb;
+    background: var(--surface-page);
+    color: var(--text-primary);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --surface-page:   #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-3:       #199e70;
+      --series-4:       #9b81e0;
+      --series-1-tint:  #8fc0ee;
+      --status-critical:#e66767;
+      --status-critical-bg: #3a1f1f;
+      background: var(--surface-page);
+      color: var(--text-primary);
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --surface-page:   #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --series-3:       #199e70;
+    --series-4:       #9b81e0;
+    --series-1-tint:  #8fc0ee;
+    --status-critical:#e66767;
+    --status-critical-bg: #3a1f1f;
+    background: var(--surface-page);
+    color: var(--text-primary);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f9f9f7; color: #0b0b0b; }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) { background: #0d0d0d; color: #ffffff; }
+    :root:where(:not([data-theme="light"])) body { background: #0d0d0d; color: #ffffff; }
+  }
+  :root[data-theme="dark"] { background: #0d0d0d; color: #ffffff; }
+  :root[data-theme="dark"] body { background: #0d0d0d; color: #ffffff; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--surface-page);
+    color: var(--text-primary);
+  }
+  .page { max-width: 1440px; margin: 0 auto; padding: 28px 32px 60px; }
+
+  header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 6px; flex-wrap: wrap; }
+  header.top h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; letter-spacing: 0.2px; }
+  header.top p.sub { margin: 0; color: var(--text-secondary); font-size: 13.5px; }
+  header.top .title-block{ flex:1 1 auto; min-width:260px; }
+  header.top [contenteditable="true"]{
+    border-radius:6px; padding:2px 6px; margin:0 0 4px -6px; cursor:text;
+    outline:1px dashed transparent; transition:outline-color .12s, background .12s;
+  }
+  header.top p.sub[contenteditable="true"]{ margin-left:-6px; }
+  header.top [contenteditable="true"]:hover{ outline-color:var(--border); background:var(--surface-1); }
+  header.top [contenteditable="true"]:focus{ outline:1px dashed var(--series-1); background:var(--surface-1); }
+  header.top .title-hint{ font-size:10px; color:var(--text-muted); margin:2px 0 0 -6px; opacity:0; transition:opacity .15s; }
+  header.top .title-block:hover .title-hint,
+  header.top .title-block:focus-within .title-hint{ opacity:1; }
+  .theme-toggle {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary);
+    border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .theme-toggle:hover { border-color: var(--text-muted); }
+
+  .legend-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 16px; margin: 16px 0 22px; font-size: 12.5px; color: var(--text-secondary);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .legend-note { color: var(--text-muted); font-size: 12px; margin-left: auto; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(560px, 1fr));
+    gap: 18px;
+  }
+
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px 18px;
+  }
+  .card h2 {
+    font-size: 15.5px; margin: 0 0 2px; font-weight: 700;
+  }
+  .card .card-sub { font-size: 11.5px; color: var(--text-muted); margin: 0 0 12px; }
+
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .panels { grid-template-columns: 1fr; } }
+
+  .panel {
+    border: 1px solid var(--gridline); border-radius: 10px; padding: 12px 12px 14px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .panel-title { font-size: 11px; font-weight: 700; letter-spacing: 0.4px; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; }
+
+  .donut-wrap { position: relative; width: 152px; height: 152px; }
+  .donut-wrap svg circle.seg { transition: opacity 0.15s; cursor: pointer; }
+  .donut-wrap:hover .seg { opacity: 0.55; }
+  .donut-wrap .seg:hover { opacity: 1 !important; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+  .donut-center .dc-label { font-size: 9.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+  .donut-center .dc-value { font-size: 14px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1.15; }
+
+  .kpi-list { width: 100%; margin-top: 10px; font-size: 11.5px; }
+  .kpi-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-bottom: 1px dashed var(--gridline); }
+  .kpi-row:last-child { border-bottom: none; }
+  .kpi-row .kn { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .kpi-row .kv { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+  .kpi-row.sub .kn { color: var(--text-muted); padding-left: 14px; }
+  .kpi-row.sub .kv { color: var(--text-secondary); font-weight: 500; }
+  .rate-badge {
+    margin-top: 8px; font-size: 11px; padding: 3px 10px; border-radius: 999px;
+    background: var(--gridline); color: var(--text-secondary); font-weight: 600;
+  }
+
+  .panel.critical { background: var(--status-critical-bg); border-color: var(--status-critical); }
+  .critical-head { display: flex; align-items: center; gap: 6px; color: var(--status-critical); font-weight: 700; font-size: 12px; margin-bottom: 8px; }
+  .meter { width: 100%; height: 10px; border-radius: 6px; background: var(--gridline); overflow: hidden; margin: 6px 0 10px; position: relative; }
+  .meter-fill { height: 100%; background: var(--status-critical); border-radius: 6px 0 0 6px; }
+  .meter-labels { display: flex; justify-content: space-between; width: 100%; font-size: 10.5px; color: var(--text-muted); margin-top: -6px; margin-bottom: 8px; }
+
+  .tooltip {
+    position: fixed; pointer-events: none; background: var(--text-primary); color: var(--surface-1);
+    font-size: 11.5px; padding: 6px 10px; border-radius: 6px; z-index: 50; opacity: 0; transition: opacity 0.1s;
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .tooltip.show { opacity: 1; }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  table.data-table caption { text-align: left; font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); }
+  table.data-table th, table.data-table td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--gridline); white-space: nowrap; color: var(--text-primary); }
+  table.data-table th:first-child, table.data-table td:first-child { text-align: left; }
+  table.data-table thead th { font-weight: 700; border-bottom: 1px solid var(--baseline); color: var(--text-primary); }
+  table.data-table tbody tr:hover { background: var(--surface-page); }
+  table.data-table td.neg { color: var(--status-critical); font-weight: 700; }
+  .table-wrap { overflow-x: auto; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-top: 28px; }
+  .group-hdr td { background: var(--surface-page); font-weight: 700; color: var(--text-primary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+  footer.note { margin-top: 20px; font-size: 11.5px; color: var(--text-muted); line-height: 1.6; }
+
+  .section-title { font-size: 15px; font-weight: 700; margin: 30px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title:first-of-type { margin-top: 4px; }
+
+  .portfolio-section {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px 20px; position: relative; overflow: hidden;
+  }
+  .portfolio-section::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--series-1);
+  }
+  .portfolio-section .section-title { margin-top: 0; }
+  .panels-lg { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 700px) { .panels-lg { grid-template-columns: 1fr; } }
+  .panel-lg { padding: 18px 16px 20px; }
+
+  .master-detail { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .master-detail { grid-template-columns: 1fr; } }
+
+  .project-list {
+    display: flex; flex-direction: column; gap: 8px;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 10px;
+    max-height: 640px; overflow-y: auto;
+  }
+  @media (max-width: 860px) { .project-list { flex-direction: row; overflow-x: auto; max-height: none; } }
+  .project-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px;
+    border: 1px solid transparent; cursor: pointer; background: transparent; text-align: left;
+    font-family: inherit; width: 100%; flex: none;
+  }
+  .project-item:hover { background: var(--surface-page); }
+  .project-item.active { border-color: var(--series-1); background: var(--surface-page); }
+  @media (max-width: 860px) { .project-item { width: 220px; } }
+  .project-item .thumb { width: 40px; height: 40px; flex: none; position: relative; }
+  .project-item .pi-info { min-width: 0; }
+  .project-item .pi-name { font-size: 12.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .project-item .pi-sub { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; }
+
+  .project-detail {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px 22px;
+  }
+  .detail-head h2 { font-size: 18px; margin: 0 0 2px; }
+  .detail-head .card-sub { margin-bottom: 14px; }
+
+  .detail-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  @media (max-width: 640px) { .detail-fields { grid-template-columns: 1fr; } }
+  .field-box { border: 1px solid var(--gridline); border-radius: 10px; padding: 10px 12px; }
+  .field-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary); margin-bottom: 6px; }
+  .field-box input[type=text] {
+    width: 100%; border: 1px solid var(--gridline); background: var(--surface-page); color: var(--text-primary);
+    border-radius: 7px; padding: 7px 9px; font-size: 13px; font-family: inherit; box-sizing: border-box;
+  }
+  .field-box input[type=text]:focus { outline: none; border-color: var(--series-1); }
+  .field-hint { font-size: 10px; color: var(--text-muted); margin-top: 5px; }
+  .progress-track { width: 100%; height: 10px; border-radius: 6px; background: var(--gridline); overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; background: var(--series-3); border-radius: 6px 0 0 6px; }
+  .progress-pct { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-top: 6px; }
+
+  body.locked .page { display: none; }
+  .gate-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 100;
+    align-items: center; justify-content: center;
+    background: #0d0d0d;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  body.locked .gate-overlay { display: flex; }
+  .gate-box {
+    background: #1a1a19; border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;
+    padding: 32px 30px; width: 320px; max-width: 90vw; text-align: center;
+  }
+  .gate-box .gate-icon { font-size: 26px; margin-bottom: 6px; }
+  .gate-box h3 { color: #fff; font-size: 16px; margin: 0 0 4px; }
+  .gate-box p { color: #c3c2b7; font-size: 12.5px; margin: 0 0 18px; }
+  .gate-box input {
+    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #383835;
+    background: #0d0d0d; color: #fff; font-size: 14px; margin-bottom: 10px; box-sizing: border-box;
+  }
+  .gate-box input:focus { outline: none; border-color: #3987e5; }
+  .gate-box button {
+    width: 100%; padding: 10px 12px; border-radius: 8px; border: none;
+    background: #3987e5; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .gate-box button:hover { background: #256abf; }
+  .gate-error { color: #e66767; font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+  .tab-bar { display: flex; gap: 6px; margin: 18px 0 20px; border-bottom: 1px solid var(--gridline); }
+  .tab-btn {
+    font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--text-secondary);
+    background: none; border: none; padding: 10px 4px; margin-right: 20px; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    -webkit-appearance: none; appearance: none; background-color: transparent;
+  }
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--series-1); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .pill {
+    font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 999px;
+    padding: 7px 14px; cursor: pointer;
+  }
+  .pill:hover { border-color: var(--text-muted); }
+  .pill.active { color: #fff; background: var(--series-1); border-color: var(--series-1); }
+
+  table.full-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 980px; }
+  table.full-table th, table.full-table td { padding: 6px 9px; text-align: right; border-bottom: 1px solid var(--gridline); color: var(--text-primary); vertical-align: top; }
+  table.full-table th:nth-child(1), table.full-table td:nth-child(1) { text-align: left; width: 46px; }
+  table.full-table th:nth-child(2), table.full-table td:nth-child(2) { text-align: left; min-width: 220px; }
+  table.full-table th:last-child, table.full-table td:last-child { text-align: left; min-width: 160px; white-space: normal; }
+  table.full-table thead th { font-weight: 700; border-bottom: 1px solid var(--baseline); background: var(--surface-page); position: sticky; top: 0; }
+  table.full-table td, table.full-table th { white-space: nowrap; }
+  table.full-table td:nth-child(2) { white-space: normal; }
+  table.full-table tr.lvl-top td { font-weight: 700; background: var(--surface-page); }
+  table.full-table tr.lvl-sub td { font-weight: 700; }
+  table.full-table tr.lvl-sub td:nth-child(2) { padding-left: 20px; }
+  table.full-table tr.lvl-item td:nth-child(2) { padding-left: 20px; }
+  table.full-table tr.lvl-detail td { color: var(--text-secondary); }
+  table.full-table tr.lvl-detail td:nth-child(2) { padding-left: 34px; }
+  table.full-table tr:hover td { background: var(--surface-page); }
+  .full-table-wrap { overflow-x: auto; background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; max-height: 720px; overflow-y: auto; }
+  .full-table-caption { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+
+
+/* ==================== NEW: multi-folder site additions ==================== */
+
+.folder-nav { display:flex; gap:10px; margin:18px 0 24px; flex-wrap:wrap; }
+.folder-btn {
+  font-family:inherit; display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:700;
+  color:var(--text-secondary); background:var(--surface-1); border:1px solid var(--border);
+  border-radius:12px; padding:13px 18px; cursor:pointer; text-align:left;
+}
+.folder-btn .fb-icon{ font-size:17px; }
+.folder-btn .fb-text{ display:flex; flex-direction:column; gap:1px; }
+.folder-btn .fb-text .fb-sub{ font-size:10.5px; font-weight:500; color:var(--text-muted); }
+.folder-btn:hover{ border-color:var(--text-muted); }
+.folder-btn.active{ color:#fff; background:var(--series-1); border-color:var(--series-1); }
+.folder-btn.active .fb-text .fb-sub{ color:rgba(255,255,255,0.75); }
+.folder-panel{ display:none; }
+.folder-panel.active{ display:block; }
+
+.folder-head{ margin-bottom:16px; }
+.folder-head h2{ font-size:19px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+.folder-head p{ margin:0; font-size:12.5px; color:var(--text-secondary); }
+
+/* KPI stat tiles */
+.kpi-tiles{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:14px; margin-bottom:18px; }
+.kpi-tile{ background:var(--surface-1); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+.kpi-tile .kt-label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:var(--text-muted); display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+.kpi-tile .kt-value{ font-size:22px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.kpi-tile .kt-sub{ font-size:12px; color:var(--text-secondary); margin-top:4px; font-variant-numeric:tabular-nums; }
+.kpi-tile .kt-bar{ height:6px; border-radius:4px; background:var(--gridline); margin-top:10px; overflow:hidden; }
+.kpi-tile .kt-bar-fill{ height:100%; border-radius:4px; }
+
+/* Bar chart wrap */
+.barchart-wrap{ background:var(--surface-1); border:1px solid var(--border); border-radius:14px; padding:20px 22px 18px; margin-bottom:18px; }
+.barchart-wrap h3{ font-size:14.5px; margin:0 0 2px; }
+.barchart-wrap .bc-sub{ font-size:11.5px; color:var(--text-muted); margin:0 0 14px; }
+.barchart-legend{ display:flex; flex-wrap:wrap; gap:16px; margin-bottom:14px; font-size:12px; color:var(--text-secondary); }
+.barchart-legend .lg-item{ display:flex; align-items:center; gap:6px; }
+.barchart-legend .lg-swatch{ width:13px; height:13px; border-radius:3px; flex:none; }
+.barchart-legend .lg-swatch.plan{ background:transparent !important; border:2px dashed currentColor; box-sizing:border-box; }
+.barchart-scroll{ overflow-x:auto; }
+.bc-axis-label{ font-size:10px; fill:var(--text-muted); }
+.bc-value-label{ font-size:10px; fill:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.bc-month-label{ font-size:10px; fill:var(--text-secondary); }
+.bc-gridline{ stroke:var(--gridline); stroke-width:1; }
+.bc-bar{ cursor:pointer; }
+.bc-bar:hover{ opacity:0.75; }
+
+/* reserve / dự phòng meter */
+.reserve-box{ border:1px solid var(--gridline); border-radius:10px; padding:12px 14px; margin-top:10px; background:var(--surface-page); }
+.reserve-head{ display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; color:var(--text-secondary); margin-bottom:7px; gap:8px; }
+.reserve-head .rh-label{ font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:5px; }
+.reserve-track{ width:100%; height:9px; border-radius:5px; background:var(--gridline); overflow:hidden; }
+.reserve-fill{ height:100%; background:var(--series-2); border-radius:5px 0 0 5px; }
+.reserve-fill.over{ background:var(--status-critical); }
+.reserve-foot{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); margin-top:6px; }
+.reserve-foot .over-label{ color:var(--status-critical); font-weight:700; }
+.reserve-foot .rem-label{ color:#0f7a45; font-weight:700; }
+@media (prefers-color-scheme: dark){ :root:where(:not([data-theme="light"])) .reserve-foot .rem-label{ color:#5fd39a; } }
+:root[data-theme="dark"] .reserve-foot .rem-label{ color:#5fd39a; }
+
+/* contract date box */
+.contract-box{ margin-top:10px; }
+.contract-box .cb-note{ font-size:10px; color:var(--text-muted); margin-top:5px; display:flex; align-items:flex-start; gap:5px; line-height:1.5; }
+.contract-box .cb-note.unconfirmed{ color:#b4870a; }
+@media (prefers-color-scheme: dark){ :root:where(:not([data-theme="light"])) .contract-box .cb-note.unconfirmed{ color:#e0b344; } }
+:root[data-theme="dark"] .contract-box .cb-note.unconfirmed{ color:#e0b344; }
+.confirm-pill{ display:inline-block; font-size:9.5px; font-weight:700; padding:1.5px 7px; border-radius:999px; margin-left:6px; vertical-align:1px; }
+.confirm-pill.yes{ background:#e3f6ec; color:#0f7a45; }
+.confirm-pill.no{ background:#fdf1dc; color:#9a6a06; }
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])) .confirm-pill.yes{ background:#12301f; color:#5fd39a; }
+  :root:where(:not([data-theme="light"])) .confirm-pill.no{ background:#332608; color:#e0b344; }
+}
+:root[data-theme="dark"] .confirm-pill.yes{ background:#12301f; color:#5fd39a; }
+:root[data-theme="dark"] .confirm-pill.no{ background:#332608; color:#e0b344; }
+
+/* notes */
+.notes-box{ background:var(--surface-1); border:1px solid var(--border); border-radius:14px; padding:18px 20px; margin-top:20px; }
+.notes-box h3{ font-size:14px; margin:0 0 4px; display:flex; align-items:center; gap:7px; }
+.notes-box .nb-sub{ font-size:11.5px; color:var(--text-muted); margin:0 0 12px; }
+.notes-box textarea{
+  width:100%; min-height:130px; resize:vertical; border:1px solid var(--gridline); background:var(--surface-page);
+  color:var(--text-primary); border-radius:10px; padding:12px 14px; font-family:inherit; font-size:13px; box-sizing:border-box; line-height:1.55;
+}
+.notes-box textarea:focus{ outline:none; border-color:var(--series-1); }
+.notes-save-state{ font-size:11px; color:var(--text-muted); margin-top:8px; }
+
+/* excel original file links */
+.excel-links-row{ margin:2px 0 18px; display:flex; flex-wrap:wrap; gap:8px; }
+.excel-link{
+  display:inline-flex; align-items:center; gap:7px; background:var(--surface-1); border:1px solid var(--border);
+  border-radius:10px; padding:9px 15px; font-size:12.5px; font-weight:600; color:var(--text-primary); text-decoration:none;
+}
+.excel-link:hover{ border-color:var(--series-3); }
+.excel-link .el-icon{ font-size:14px; }
+.excel-note{ font-size:11px; color:var(--text-muted); margin:-4px 0 18px; line-height:1.6; }
+
+/* diff badge */
+.diff-badge{ display:inline-flex; align-items:center; gap:3px; font-size:10.5px; font-weight:700; padding:2.5px 8px; border-radius:999px; white-space:nowrap; }
+.diff-badge.pos{ color:#0f7a45; background:#e3f6ec; }
+.diff-badge.neg{ color:var(--status-critical); background:var(--status-critical-bg); }
+.diff-badge.zero{ color:var(--text-muted); background:var(--gridline); }
+@media (prefers-color-scheme: dark){ :root:where(:not([data-theme="light"])) .diff-badge.pos{ color:#5fd39a; background:#12301f; } }
+:root[data-theme="dark"] .diff-badge.pos{ color:#5fd39a; background:#12301f; }
+
+.section-note{ font-size:11.5px; color:var(--text-muted); margin:10px 0 20px; line-height:1.65; }
+
+.summary-table-wrap{ margin-top:4px; }
+
+/* scope disclaimer — clarifies that Mục 2/3 numbers are company-level, not project-level */
+.scope-note{
+  display:flex; gap:10px; align-items:flex-start; background:var(--surface-1); border:1px solid var(--border);
+  border-left:3px solid var(--series-4); border-radius:10px; padding:13px 16px; margin:0 0 18px;
+  font-size:12px; line-height:1.65; color:var(--text-secondary);
+}
+.scope-note .sn-icon{ font-size:15px; flex:none; margin-top:1px; }
+.scope-note b{ color:var(--text-primary); }
+
+/* ==================== Folder 4 — Nhân lực dự án ==================== */
+.staff-cards{ display:grid; grid-template-columns:repeat(auto-fit, minmax(430px,1fr)); gap:16px; margin-bottom:20px; }
+.staff-table-scroll{ overflow-x:auto; }
+.staff-card{ background:var(--surface-1); border:1px solid var(--border); border-radius:14px; padding:18px 20px; }
+.staff-card h3{ font-size:14.5px; margin:0 0 2px; display:flex; align-items:center; gap:7px; }
+.staff-card .sc-sub{ font-size:11px; color:var(--text-muted); margin:0 0 12px; }
+table.staff-table{ width:100%; table-layout:fixed; border-collapse:collapse; font-size:12px; }
+table.staff-table th{
+  text-align:left; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.2px;
+  color:var(--text-muted); padding:5px 3px; border-bottom:1px solid var(--gridline);
+}
+table.staff-table th:first-child{ width:34%; }
+table.staff-table th:not(:first-child){ text-align:center; }
+table.staff-table td{ padding:7px 3px; border-bottom:1px solid var(--gridline); vertical-align:middle; overflow:hidden; }
+table.staff-table tr:last-child td{ border-bottom:none; }
+table.staff-table tr:hover td{ background:var(--surface-page); }
+.staff-name{ font-weight:700; color:var(--text-primary); font-size:11.5px; line-height:1.3; overflow-wrap:break-word; }
+.staff-role{ font-size:9.5px; color:var(--text-muted); line-height:1.3; overflow-wrap:break-word; }
+.staff-note{ font-size:9.5px; color:#b45309; font-weight:600; line-height:1.3; overflow-wrap:break-word; margin-top:1px; }
+:root[data-theme="dark"] .staff-note{ color:#fbbf24; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .staff-note{ color:#fbbf24; } }
+.staff-cell{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+.staff-bar-track{ width:100%; height:6px; border-radius:4px; background:var(--gridline); overflow:hidden; }
+.staff-bar-fill{ height:100%; border-radius:4px; background:var(--series-1); }
+.staff-pct{ font-size:10px; font-variant-numeric:tabular-nums; text-align:center; color:var(--text-secondary); }
+.staff-pct.zero{ color:var(--text-muted); }
+
+.staff-agg-wrap{ margin-bottom:24px; }
+table.staff-agg-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+table.staff-agg-table th{ text-align:left; padding:7px 10px; border-bottom:1px solid var(--baseline); font-weight:700; color:var(--text-primary); }
+table.staff-agg-table td{ padding:8px 10px; border-bottom:1px solid var(--gridline); color:var(--text-primary); vertical-align:top; }
+table.staff-agg-table tr:hover td{ background:var(--surface-page); }
+.staff-proj-pills{ display:flex; flex-wrap:wrap; gap:5px; }
+.staff-proj-pill{
+  display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:600; color:var(--text-secondary);
+  background:var(--surface-page); border:1px solid var(--border); border-radius:999px; padding:2.5px 9px;
+}
+.staff-proj-pill b{ color:var(--text-primary); font-variant-numeric:tabular-nums; }
+
+/* payroll replica table (Folder 4, Excel tab) — column 2/3 need their own alignment, not the Mã/Tên defaults */
+table.payroll-table th:nth-child(2), table.payroll-table td:nth-child(2){ text-align:left; min-width:80px; }
+table.payroll-table th:nth-child(3), table.payroll-table td:nth-child(3){ text-align:left; min-width:170px; white-space:normal; }
+table.payroll-table th:last-child, table.payroll-table td:last-child{ text-align:right; min-width:auto; white-space:nowrap; }
+table.payroll-table tfoot td{ font-weight:700; background:var(--surface-page); border-top:1px solid var(--baseline); }
+
+</style>
+</head>
+<body class="locked">
+
+<div class="gate-overlay">
+  <div class="gate-box">
+    <div class="gate-icon">🔒</div>
+    <h3>Dashboard Tài chính Công ty</h3>
+    <p>Nội dung nội bộ — vui lòng nhập mật khẩu để xem</p>
+    <input type="password" id="gatePassword" placeholder="Mật khẩu" autocomplete="off">
+    <button id="gateSubmit" type="button">Mở dashboard</button>
+    <div class="gate-error" id="gateError"></div>
+  </div>
+</div>
+
+<div class="viz-root page" id="root">
+
+  <header class="top">
+    <div class="title-block">
+      <h1 id="pageTitle" contenteditable="true" spellcheck="false">Dashboard Tài chính Công ty</h1>
+      <p class="sub" id="pageSubtitle" contenteditable="true" spellcheck="false">Chi phí dự án · Báo cáo thu chi · Dòng tiền tài chính · Nhân lực dự án — cập nhật 17/08/2026</p>
+      <div class="title-hint">✎ Bấm vào để sửa tiêu đề — chỉ lưu trên trình duyệt này (không đồng bộ cho người xem khác)</div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button">🌙 Chế độ tối</button>
+  </header>
+
+  <nav class="folder-nav">
+    <button class="folder-btn active" data-folder="folder1" type="button">
+      <span class="fb-icon">📁</span>
+      <span class="fb-text"><span>1. Chi phí dự án</span><span class="fb-sub">Biểu đồ từng dự án · dự phòng · hợp đồng</span></span>
+    </button>
+    <button class="folder-btn" data-folder="folder2" type="button">
+      <span class="fb-icon">📁</span>
+      <span class="fb-text"><span>2. Báo cáo thu chi 2025–2026</span><span class="fb-sub">Tổng thu · tổng chi · lợi nhuận</span></span>
+    </button>
+    <button class="folder-btn" data-folder="folder3" type="button">
+      <span class="fb-icon">📁</span>
+      <span class="fb-text"><span>3. Dòng tiền tài chính</span><span class="fb-sub">Theo từng tháng 2025–2026</span></span>
+    </button>
+    <button class="folder-btn" data-folder="folder4" type="button">
+      <span class="fb-icon">📁</span>
+      <span class="fb-text"><span>4. Nhân lực dự án</span><span class="fb-sub">% thời gian tham gia theo giai đoạn</span></span>
+    </button>
+  </nav>
+
+  <!-- ===================== FOLDER 1 — CHI PHÍ DỰ ÁN ===================== -->
+  <section class="folder-panel active" id="folder1">
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabBtnOverview" type="button">📊 Tổng quan</button>
+      <button class="tab-btn" id="tabBtnFull" type="button">📄 Chi tiết đầy đủ (Excel)</button>
+    </div>
+
+    <div class="tab-panel active" id="tabOverview">
+
+      <div class="legend-bar">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--series-1)"></span>Chi phí</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--series-1-tint)"></span>— trong đó: dự phòng</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--series-2)"></span>Thưởng</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--series-3)"></span>Lợi nhuận sau thưởng</div>
+        <div class="legend-note">Mỗi vòng tròn = 100% Doanh thu · tâm = Doanh thu · Chi phí dự phòng nay được tách thành lát riêng (màu nhạt hơn) trong vòng Chi phí</div>
+      </div>
+
+      <section class="portfolio-section">
+        <div class="section-title">📊 Tổng hợp toàn bộ dự án (<span id="portfolioCount"></span> dự án)</div>
+        <div class="panels-lg" id="portfolioPanels"></div>
+        <div id="portfolioReserve"></div>
+      </section>
+
+      <div class="section-title">📁 Chi tiết theo từng dự án</div>
+      <div class="master-detail">
+        <div class="project-list" id="projectList"></div>
+        <div class="project-detail" id="projectDetail"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="dataTable">
+          <caption>Bảng số liệu chi tiết (đơn vị: VNĐ)</caption>
+          <thead>
+            <tr>
+              <th>Dự án / Chỉ tiêu</th>
+              <th>Doanh thu</th>
+              <th>Chi phí</th>
+              <th>LN trước thưởng</th>
+              <th>Thưởng</th>
+              <th>LN sau thưởng</th>
+              <th>Tỷ suất LN %</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <footer class="note">
+        Kế hoạch = giá trị theo hợp đồng (chưa VAT). Thực tế = giá trị đã thu/chi lũy kế đến ngày cập nhật (bao gồm VAT phần doanh thu).
+        Chi phí dự phòng (mục B4 trong bảng tài chính từng dự án) đã nằm sẵn trong "Chi phí" ở trên — ô "Đã chi / Còn lại" bên dưới mỗi dự án tách riêng ra để dễ theo dõi.
+        Dữ liệu trích xuất từ các file BCTC dự án trong thư mục 5.ChiTietChiPhiDuAn — vui lòng đối chiếu file gốc khi cần số liệu chính thức.
+      </footer>
+
+    </div>
+
+    <div class="tab-panel" id="tabFull">
+      <div class="pill-row" id="fullProjectPills"></div>
+      <div class="full-table-wrap">
+        <div class="full-table-caption" id="fullTableCaption"></div>
+        <table class="full-table" id="fullTable">
+          <thead>
+            <tr>
+              <th>Mã</th>
+              <th>Tên công việc / hạng mục</th>
+              <th>%</th>
+              <th>Tạm ứng</th>
+              <th>Giá trị HĐ (chưa VAT)</th>
+              <th>Hoàn trả tạm ứng</th>
+              <th>Thuế VAT (%)</th>
+              <th>Giá trị dự kiến theo HĐ (bao gồm VAT)</th>
+              <th>Thu/chi thực tế (bao gồm VAT)</th>
+              <th>Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody id="fullTableBody"></tbody>
+        </table>
+      </div>
+      <footer class="note">Bảng này sao chép đầy đủ toàn bộ các dòng của bảng "TÀI CHÍNH" trong file Excel gốc của từng dự án (bao gồm các mốc thanh toán, chi tiết chi phí, và các mức thưởng E1-E5) — không rút gọn.</footer>
+    </div>
+  </section>
+
+  <!-- ===================== FOLDER 2 — BÁO CÁO THU CHI ===================== -->
+  <section class="folder-panel" id="folder2">
+    <div class="folder-head">
+      <h2>📊 2. Báo cáo thu chi 2025–2026</h2>
+      <p>Tổng thu · tổng chi · lợi nhuận toàn công ty, Thực tế so với Dự kiến — giai đoạn 10/2025 – 12/2026 (không chia theo từng tháng)</p>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" id="f2TabBtnChart" type="button">📊 Biểu đồ</button>
+      <button class="tab-btn" id="f2TabBtnFull" type="button">📄 Chi tiết đầy đủ (Excel)</button>
+    </div>
+
+    <div class="tab-panel active" id="f2TabChart">
+
+      <div class="scope-note">
+        <span class="sn-icon">ℹ️</span>
+        <div><b>Lưu ý về phạm vi số liệu:</b> "Tổng chi" ở mục này là chi phí <b>vận hành công ty</b> (chi phí đầu tư + lương nhân sự + overhead văn phòng), lấy từ báo cáo tài chính tổng thể — khác với "Chi phí" ở Mục 1 là chi phí <b>trực tiếp thi công</b> từng dự án, nên hai số liệu này không cộng dồn khớp nhau (và không cần khớp). Cột "Dự kiến" cũng là phần doanh thu dự kiến thu <b>thêm</b> trong giai đoạn báo cáo 10/2025–12/2026, không phải toàn bộ giá trị hợp đồng còn lại như "Kế hoạch" ở Mục 1. Riêng số liệu <b>Thực tế</b> thì luôn khớp giữa các mục.</div>
+      </div>
+
+      <div class="kpi-tiles" id="f2KpiTiles"></div>
+
+      <div class="legend-bar">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--series-1)"></span>Tổng chi</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--series-2)"></span>Thưởng</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--series-3)"></span>Lợi nhuận sau thưởng</div>
+        <div class="legend-note">Mỗi vòng tròn = 100% Tổng thu · tâm = Tổng thu · Lợi nhuận trước thưởng = Thưởng + Lợi nhuận sau thưởng</div>
+      </div>
+
+      <section class="portfolio-section">
+        <div class="section-title">📊 Tổng thu — Tổng chi — Lợi nhuận</div>
+        <div class="panels-lg" id="f2Panels"></div>
+      </section>
+
+      <div class="table-wrap summary-table-wrap">
+        <table class="data-table" id="f2Table">
+          <caption>Chi tiết báo cáo thu chi (đơn vị: VNĐ)</caption>
+          <thead><tr><th>Chỉ tiêu</th><th>Thực tế</th><th>Dự kiến</th></tr></thead>
+          <tbody id="f2TableBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <div class="tab-panel" id="f2TabFull">
+
+      <div class="excel-links-row">
+        <a class="excel-link" href="./data/01.V1_BaoCaoTaiChinhTongThe_CapNhat_260817.xlsx" target="_blank" rel="noopener"><span class="el-icon">📗</span> Xem / tải file Excel gốc (sheet BC_ThuChi_2026)</a>
+      </div>
+      <p class="excel-note">Bảng bên dưới sao chép đầy đủ dữ liệu sheet BC_ThuChi_2026 trong file Excel gốc. Liên kết tải file mở từ thư mục <code>data/</code> cùng cấp với trang này — nhớ chép file <code>01.V1_BaoCaoTaiChinhTongThe_CapNhat_260817.xlsx</code> vào thư mục <code>data/</code> trong repo GitHub để liên kết hoạt động.</p>
+
+      <div class="full-table-wrap">
+        <div class="full-table-caption">A. Tổng thu — theo dự án và mốc thanh toán (đơn vị: VNĐ)</div>
+        <table class="full-table">
+          <thead>
+            <tr>
+              <th>Mã</th><th>Tên công việc / hạng mục</th><th>Giá trị HĐ (chưa VAT)</th><th>Giá trị HĐ (gồm VAT)</th>
+              <th>Tỷ lệ %</th><th>Tạm ứng</th><th>Tỷ lệ hoàn thành</th><th>Giá trị thu thực tế</th>
+              <th>Tỷ lệ HT thêm dự kiến</th><th>Giá trị thu thêm dự kiến</th>
+            </tr>
+          </thead>
+          <tbody id="f2ThuTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="full-table-wrap" style="margin-top:18px">
+        <div class="full-table-caption">B. Tổng chi — theo hạng mục (đơn vị: VNĐ)</div>
+        <table class="full-table">
+          <thead>
+            <tr><th>Mã</th><th>Tên công việc / hạng mục</th><th>Giá trị (đã thực hiện)</th><th>Giá trị (dự kiến)</th><th>Phát sinh dự kiến</th><th>Ghi chú</th></tr>
+          </thead>
+          <tbody id="f2ChiTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="full-table-wrap" style="margin-top:18px">
+        <div class="full-table-caption">E.1 Thưởng dự án — theo từng dự án (đơn vị: VNĐ)</div>
+        <table class="full-table">
+          <thead>
+            <tr><th colspan="2">Dự án</th><th>Giá trị (đã thực hiện)</th><th>Giá trị (dự kiến)</th></tr>
+          </thead>
+          <tbody id="f2ThuongTableBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <div class="notes-box">
+      <h3>📝 Ghi chú bổ sung</h3>
+      <p class="nb-sub">Ghi chú của bạn chỉ lưu trên trình duyệt này (không đồng bộ cho người xem khác).</p>
+      <textarea id="f2Notes" placeholder="Nhập ghi chú về báo cáo thu chi ở đây..."></textarea>
+      <div class="notes-save-state" id="f2NotesState"></div>
+    </div>
+  </section>
+
+  <!-- ===================== FOLDER 3 — DÒNG TIỀN TÀI CHÍNH ===================== -->
+  <section class="folder-panel" id="folder3">
+    <div class="folder-head">
+      <h2>💵 3. Dòng tiền tài chính 2025–2026</h2>
+      <p>Tổng thu · tổng chi · lợi nhuận theo từng tháng, Thực tế và Dự kiến — từ Tháng 09/2025 đến Tháng 12/2026</p>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" id="f3TabBtnChart" type="button">📊 Biểu đồ</button>
+      <button class="tab-btn" id="f3TabBtnFull" type="button">📄 Chi tiết đầy đủ (Excel)</button>
+    </div>
+
+    <div class="tab-panel active" id="f3TabChart">
+
+      <div class="scope-note">
+        <span class="sn-icon">ℹ️</span>
+        <div><b>Lưu ý về phạm vi số liệu:</b> giống Mục 2, "Chi" theo từng tháng ở đây là chi phí <b>vận hành công ty</b> (đầu tư + lương + overhead), không phải chi phí trực tiếp thi công dự án ở Mục 1 — nên không nên cộng dồn 2 mục này với nhau để đối chiếu.</div>
+      </div>
+
+      <div class="barchart-wrap">
+        <h3>Thu — Chi theo tháng</h3>
+        <p class="bc-sub">Đường Thu (tím) và Chi (xanh dương) theo từng tháng — nét liền là số Thực tế, nét đứt là số Dự kiến cho các tháng chưa có dữ liệu. Vùng tô giữa 2 đường: xanh lá khi Thu ≥ Chi, đỏ khi Thu &lt; Chi; số phía trên mỗi tháng là chênh lệch Thu − Chi tháng đó (di chuột vào điểm/nhãn để xem chi tiết Kế hoạch so với Thực tế).</p>
+        <div class="barchart-legend" id="f3Legend"></div>
+        <div class="barchart-scroll" id="f3Chart"></div>
+      </div>
+
+    </div>
+
+    <div class="tab-panel" id="f3TabFull">
+
+      <div class="excel-links-row">
+        <a class="excel-link" href="./data/01.V1_BaoCaoTaiChinhTongThe_CapNhat_260817.xlsx" target="_blank" rel="noopener"><span class="el-icon">📗</span> Xem / tải file Excel gốc (sheet BC_DongTien_2026)</a>
+      </div>
+      <p class="excel-note">Cùng một file Excel tổng thể với Folder 2 — chỉ khác sheet dữ liệu (BC_DongTien_2026). Bảng bên dưới sao chép đầy đủ theo từng tháng (Dự kiến / Thực tế) — cuộn ngang để xem hết 16 tháng.</p>
+
+      <div class="full-table-wrap" id="f3TableWrap">
+        <div class="full-table-caption">Dòng tiền theo tháng — Tháng 09/2025 → Tháng 12/2026 (đơn vị: VNĐ)</div>
+      </div>
+
+    </div>
+
+    <div class="notes-box">
+      <h3>📝 Ghi chú bổ sung</h3>
+      <p class="nb-sub">Ghi chú của bạn chỉ lưu trên trình duyệt này (không đồng bộ cho người xem khác).</p>
+      <textarea id="f3Notes" placeholder="Nhập ghi chú về dòng tiền tài chính ở đây..."></textarea>
+      <div class="notes-save-state" id="f3NotesState"></div>
+    </div>
+  </section>
+
+  <!-- ===================== FOLDER 4 — NHÂN LỰC DỰ ÁN ===================== -->
+  <section class="folder-panel" id="folder4">
+    <div class="folder-head">
+      <h2>👥 4. Nhân lực dự án</h2>
+      <p>Tỷ lệ % thời gian nhân sự tham gia từng dự án, theo từng giai đoạn TKCS / TKKT / TKTC / GSTG — nguồn: bảng tính Overhead của mỗi dự án. Không tính thực tập sinh.</p>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" id="f4TabBtnChart" type="button">📊 Biểu đồ</button>
+      <button class="tab-btn" id="f4TabBtnFull" type="button">📄 Chi tiết đầy đủ (Excel)</button>
+    </div>
+
+    <div class="tab-panel active" id="f4TabChart">
+
+      <div class="scope-note">
+        <span class="sn-icon">ℹ️</span>
+        <div><b>Cách đọc:</b> mỗi thanh thể hiện <b>Hệ số thời gian (HỆ SỐ TG)</b> mà nhân sự đó dành cho dự án trong từng giai đoạn — <b>TKCS</b> = Thiết kế cơ sở, <b>TKKT</b> = Thiết kế kỹ thuật, <b>TKTC</b> = Thiết kế thi công, <b>GSTG</b> = Giám sát tác giả. Đây là tỷ lệ % thời gian, không phải số lương (số lương công ty quy đổi từ tỷ lệ này không hiển thị ở đây).</div>
+      </div>
+
+      <div class="staff-agg-wrap">
+        <div class="section-title">🧑‍🤝‍🧑 Tổng hợp theo nhân sự — số dự án tham gia</div>
+        <div class="table-wrap" style="margin-top:10px">
+          <table class="staff-agg-table" id="f4AggTable">
+            <thead><tr><th>Nhân sự</th><th>Vai trò</th><th>Số dự án</th><th>Tham gia tại</th></tr></thead>
+            <tbody id="f4AggTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title">📁 Chi tiết theo từng dự án</div>
+      <div class="staff-cards" id="f4Cards" style="margin-top:10px"></div>
+
+    </div>
+
+    <div class="tab-panel" id="f4TabFull">
+
+      <div class="excel-links-row">
+        <a class="excel-link" href="./data/01.V1_BaoCaoTaiChinhTongThe_CapNhat_260817.xlsx" target="_blank" rel="noopener"><span class="el-icon">📗</span> Xem / tải file Excel gốc (sheet TongHopLuongThuong_NhanSu)</a>
+      </div>
+      <p class="excel-note">Bảng bên dưới sao chép đầy đủ sheet "TongHopLuongThuong_NhanSu" trong file Excel tổng thể — gồm lương/thưởng theo từng nhân sự cho giai đoạn 2025 và 2026. Cuộn ngang để xem hết bảng.</p>
+
+      <div class="full-table-wrap">
+        <div class="full-table-caption" id="f4PayrollCaption">Bảng tổng hợp lương thưởng cán bộ nhân viên (đơn vị: VNĐ)</div>
+        <table class="full-table payroll-table">
+          <thead>
+            <tr>
+              <th rowspan="2">STT</th><th rowspan="2">Mã NV</th><th rowspan="2">Họ và tên</th>
+              <th rowspan="2">Năm sinh</th><th rowspan="2">Ngày vào công ty</th><th rowspan="2">Ngày kết thúc HĐLĐ</th>
+              <th colspan="6">Giai đoạn năm 2025</th>
+              <th colspan="6">Giai đoạn năm 2026</th>
+              <th rowspan="2">Tỷ lệ Lương/Thưởng</th><th rowspan="2">BHXH công ty chi trả</th>
+            </tr>
+            <tr>
+              <th>Tổng lương</th><th>Thưởng sinh nhật</th><th>Thưởng dự án</th><th>Thưởng Tết Tây</th><th>Thưởng Tết Ta</th><th>Tổng cộng</th>
+              <th>Tổng lương</th><th>Thưởng sinh nhật</th><th>Thưởng dự án</th><th>Thưởng Tết Tây</th><th>Thưởng Tết Ta</th><th>Tổng cộng</th>
+            </tr>
+          </thead>
+          <tbody id="f4PayrollTableBody"></tbody>
+          <tfoot id="f4PayrollTableFoot"></tfoot>
+        </table>
+      </div>
+
+    </div>
+
+    <div class="notes-box">
+      <h3>📝 Ghi chú bổ sung</h3>
+      <p class="nb-sub">Ghi chú của bạn chỉ lưu trên trình duyệt này (không đồng bộ cho người xem khác).</p>
+      <textarea id="f4Notes" placeholder="Nhập ghi chú về nhân lực dự án ở đây..."></textarea>
+      <div class="notes-save-state" id="f4NotesState"></div>
+    </div>
+  </section>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+
+const PROJECTS = [{"key": "C8A", "name": "C8A", "date": "17/08/2026", "doanhthu": {"plan": 2054650000.0, "actual": 406820700.0}, "chiphi": {"plan": 1331868770.0, "actual": 230013300.0}, "lnttt": {"plan": 722781230.0, "actual": 176807400.0}, "thuong": {"plan": 145000000.0, "actual": 35361480.0}, "lnst": {"plan": 577781230.0, "actual": 141445920.0}, "tysuat": {"plan": 0.2812066434672572, "actual": 0.34768614281426685}, "duphong": {"plan": 205465000.0, "actual": 6848833.333333333}, "fullTable": [["A", "DOANH THU", 1, null, 2054650000, null, null, 2219022000, 406820700, null], [1, "Tạm ứng", 0.1, "-", 205465000, 205465000, "-", 205465000, 205465000, "01/05/2026"], [2, "Hoàn thành workshop với CĐT", 0.1, "-", 205465000, 20546500, 0.08, 221902200, 201355700, "01/06/2026"], [3, "Sau khi bên B nộp hồ sơ hardcopy TKCS cho bên A", 0.1, "-", 205465000, 20546500, 0.08, 221902200, 0, null], [4, "CĐT phê duyệt TKCS và có VB thẩm định TKCS", 0.1, "-", 205465000, 20546500, 0.08, 221902200, 0, null], [5, "Sau khi bên B nộp hồ sơ PCCC cho bên A", 0.1, "-", 205465000, 20546500, 0.08, 221902200, 0, null], [6, "Sau khi bên B nộp hồ sơ hardcopy TKKT cho bên A", 0.15, "-", 308197500, 30819750, 0.08, 332853300, 0, null], [7, "Sau khi CĐT phê duyệt TKKT và PCCC", 0.1, "-", 205465000, 20546500, 0.08, 221902200, 0, null], [8, "Sau khi bên B nộp hồ sơ hardcopy TKTC ngầm cho bên A", 0.05, "-", 102732500, 10273250, 0.08, 110951100, 0, null], [9, "Sau khi bên B nộp hồ sơ hardcopy TKTC thân cho bên A", 0.1, "-", 205465000, 20546500, 0.08, 221902200, 0, null], [10, "Sau khi CĐT phê duyệt hồ sơ TKTC ", 0.1, "-", 205465000, 41093000, 0.08, 221902200, 0, null], [11, "Sản phẩm được nghiệm thu, phê duyệt", 0.1, "-", 205465000, 0, 0.08, 221902200, 0, null], ["B", "CHI PHÍ", null, null, 1331868770, null, null, 0, 230013300, null], ["B1", "CHI PHÍ NHÀ THẦU PHỤ, NHÀ CUNG CẤP", null, null, 0, null, null, 0, 0, null], [null, null, null, null, 0, null, null, 0, 0, null], ["B2", "CHI PHÍ TIỀN LƯƠNG, THƯỞNG, PHỤ CẤP", null, null, 534446000, null, null, "-", 178148666.66666666, null], ["B2.1", "Lương, thưởng, phụ cấp ( bao gồm  BHXH,YT,TN,KPCD)", null, null, 534446000, null, null, "-", 178148666.66666666, null], ["B3", "CHI PHÍ QLTK/ CP PHÂN BỔ KHÁC ", null, null, 591957770, null, null, 0, 45015800, null], ["B3.1", "Chi phí overhead (phí khấu hao tài sản, phí thuê MB vp, vp phẩm, và các chi phí khác để duy trì hoạt động Admin hỗ trợ dự án tại VP công ty )", null, null, 591957770, null, null, null, 45015800, null], ["B4", "CHI PHÍ DỰ PHÒNG", 0.1, null, 205465000, null, null, "-", 6848833.333333333, null], [null, "Chi phí tiếp khách, in ấn", 0.2, null, 41093000, null, null, null, 0, null], [null, "Chi phí phần mềm", 0.1, null, 20546500, null, null, null, 6848833.333333333, null], [null, "Chi phí công tác, giám sát tác giả", 0.7, null, 143825500, null, null, null, 0, null], ["C", "LỢI NHUẬN", null, null, 722781230, null, null, null, 176807400, null], ["D", "TỶ SUẤT LỢI NHUẬN TRƯỚC THƯỞNG %", null, null, 0.35177827367191494, null, null, null, 0.43460767851783355, null], ["E", "THƯỞNG DỰ ÁN", 0.2, null, 145000000, null, null, null, 35361480, null], ["E1", "1. Mức thưởng bằng (10% - 20%) tổng mức thưởng thực tế của dự án : E1 = (10% - 20%) X E\n2. Thời gian thưởng: sau khi Hợp đồng dự án được ký kết\n3. Đối tượng khen thưởng: \n+ Nhân sự tham gia trực tiếp báo giá và thương thảo Hợp đồng.\n+ Nhân sự tham gia kiểm tra hồ sơ TKYT (hồ sơ bản vẽ và tính toán) đảm bảo thông số đầu vào cho TKCS.", 0.2, null, 29000000, null, null, null, null, null], ["E2", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E2 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn thẩm định Báo cáo nghiên cứu khả thi.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 36000000, null, null, null, null, null], ["E3", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E3 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn Xin phép xây dựng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 36000000, null, null, null, null, null], ["E4", "1. Mức thưởng bằng (10-15%) tổng mức thưởng thực tế của dự án : E4 = (10-15%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao đưa vào sử dụng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 36000000, null, null, null, null, null], ["E5", "1. Mức thưởng bằng 25%-35% tổng mức thưởng thực tế của dự án : E5 = (25%-35%) X E\n2. Viêc trích thưởng cho quỹ thưởng cho trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…) được thực hiện như sau:\n-  Sau khi dự án hoàn thành thẩm định báo cáo nghiên cứu khả thi: trích thưởng 50% x H.\n- Sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao: trích thưởng 50% x H.\n2. Thời gian thưởng: định kỳ 2 lần/ năm\n+ Lần 1 vào cuối quý 2\n+ Lần 2 vào cuối quý 4.\n3. Đối tượng khen thưởng: Trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…)", 0.35, null, 51000000, null, null, null, null, null], ["F", "LỢI NHUẬN", null, null, 577781230, null, null, null, 141445920, null], ["G", "TỶ SUẤT LỢI NHUẬN %", null, null, 0.2812066434672572, null, null, null, 0.34768614281426685, null]], "xlsx": "03.V1_BaoCaoTaiChinh_DuAn-C8A_260817.xlsx", "contract": {"date": "06/05/2026", "confirmed": true, "source": "Hợp đồng số 162/2026/TTHĐ/DB-VONE (ký ngày 06/05/2026, xác nhận lại trong Phụ lục HĐ 01)"}}, {"key": "CCTP", "name": "CCTP 1 & 2", "date": "17/08/2026", "doanhthu": {"plan": 5923800000.0, "actual": 2239196400.0}, "chiphi": {"plan": 2435880590.0, "actual": 847578591.6666667}, "lnttt": {"plan": 3487919410.0, "actual": 1391617808.3333333}, "thuong": {"plan": 523000000.0, "actual": 208742671.24999997}, "lnst": {"plan": 2964919410.0, "actual": 1182875137.0833333}, "tysuat": {"plan": 0.5005097082953509, "actual": 0.5282587704603907}, "duphong": {"plan": 592380000.0, "actual": 67136400.0}, "fullTable": [["A", "DOANH THU", 1, null, 5923800000, null, null, 6397704000, 2239196400, null], [1, "Phí huy động nhân sự", 0.1, "-", 592380000, "-", 0.08, 639770400, 639770400, null], [2, "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", 0.1, "-", 592380000, "-", 0.08, 639770400, 639770400, null], [3, "Hoàn thành workshop với CĐT", 0.05, "-", 296190000, "-", 0.08, 319885200, 319885200, null], [4, "Sau khi bên B nộp hồ sơ hardcopy TKCS cho bên A", 0.1, "-", 592380000, "-", 0.08, 639770400, 639770400, null], [5, "CĐT phê duyệt TKCS và có VB thẩm định TKCS", 0.1, "-", 592380000, "-", 0.08, 639770400, null, null], [6, "Sau khi bên B nộp hồ sơ hardcopy TKKT cho bên A", 0.1, "-", 592380000, "-", 0.08, 639770400, null, null], [7, "Sau khi bên B nộp hồ sơ PCCC cho bên A", 0.05, "-", 296190000, "-", 0.08, 319885200, null, null], [8, "Sau khi CĐT phê duyệt TKKT và PCCC", 0.1, "-", 592380000, "-", 0.08, 639770400, null, null], [9, "Sau khi bên B nộp hồ sơ hardcopy TKTC ngầm cho bên A", 0.05, "-", 296190000, "-", 0.08, 319885200, null, null], [10, "Sau khi bên B nộp hồ sơ hardcopy TKTC thân cho bên A", 0.05, "-", 296190000, "-", 0.08, 319885200, null, null], [11, "Sau khi CĐT phê duyệt hồ sơ TKTC ", 0.1, "-", 592380000, "-", 0.08, 639770400, null, null], [12, "Sau khi dự án hoàn thành, nghiệm thu và đưa vào sử dụng", 0.1, "-", 592380000, "-", 0.08, 639770400, null, null], ["B", "CHI PHÍ", null, null, 2435880590, null, null, "-", 847578591.6666667, null], ["B1", "CHI PHÍ NHÀ THẦU PHỤ, NHÀ CUNG CẤP", null, null, 0, null, null, 0, 0, null], [null, null, null, null, 0, null, null, 0, 0, null], ["B2", "CHI PHÍ TIỀN LƯƠNG, THƯỞNG, PHỤ CẤP", null, null, 801483230, null, null, "-", 667902691.6666667, null], ["B2.1", "Lương, thưởng, phụ cấp ( bao gồm  BHXH,YT,TN,KPCD)", null, null, 801483230, null, null, "-", 667902691.6666667, null], ["B3", "CHI PHÍ QLTK/ CP PHÂN BỔ KHÁC ", null, null, 864303359.9999998, null, null, 0, 112539500, null], ["B3.1", "Chi phí overhead (phí khấu hao tài sản, phí thuê MB vp, vp phẩm, và các chi phí khác để duy trì hoạt động Admin hỗ trợ dự án tại VP công ty )", null, null, 864303359.9999998, null, null, null, 112539500, null], ["B4", "CHI PHÍ DỰ PHÒNG", 0.1, null, 592380000, null, null, "-", 67136400, null], [null, "Chi phí tiếp khách, in ấn", 0.3, null, 177714000, null, null, null, 17771400, null], [null, "Chi phí phần mềm", 0.1, null, 59238000, null, null, null, 49365000, null], [null, "Chi phí công tác, giám sát tác giả", 0.6, null, 355428000, null, null, null, 0, null], ["C", "LỢI NHUẬN", null, null, 3487919410, null, null, null, 1391617808.3333333, null], ["D", "TỶ SUẤT LỢI NHUẬN TRƯỚC THƯỞNG %", null, null, 0.5887976315878322, null, null, null, 0.6214809064239891, null], ["E", "THƯỞNG DỰ ÁN", 0.15, null, 523000000, null, null, null, 208742671.24999997, null], ["E1", "1. Mức thưởng bằng (10% - 20%) tổng mức thưởng thực tế của dự án : E1 = (10% - 20%) X E\n2. Thời gian thưởng: sau khi Hợp đồng dự án được ký kết\n3. Đối tượng khen thưởng: \n+ Nhân sự tham gia trực tiếp báo giá và thương thảo Hợp đồng.\n+ Nhân sự tham gia kiểm tra hồ sơ TKYT (hồ sơ bản vẽ và tính toán) đảm bảo thông số đầu vào cho TKCS.", 0.2, null, 105000000, null, null, null, null, null], ["E2", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E2 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn thẩm định Báo cáo nghiên cứu khả thi.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.2, null, 105000000, null, null, null, null, null], ["E3", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E3 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn Xin phép xây dựng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.2, null, 105000000, null, null, null, null, null], ["E4", "1. Mức thưởng bằng (10-15%) tổng mức thưởng thực tế của dự án : E4 = (10-15%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao đưa vào sử dụng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.2, null, 105000000, null, null, null, null, null], ["E5", "1. Mức thưởng bằng 25%-35% tổng mức thưởng thực tế của dự án : E5 = (25%-35%) X E\n2. Viêc trích thưởng cho quỹ thưởng cho trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…) được thực hiện như sau:\n-  Sau khi dự án hoàn thành thẩm định báo cáo nghiên cứu khả thi: trích thưởng 50% x H.\n- Sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao: trích thưởng 50% x H.\n2. Thời gian thưởng: định kỳ 2 lần/ năm\n+ Lần 1 vào cuối quý 2\n+ Lần 2 vào cuối quý 4.\n3. Đối tượng khen thưởng: Trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…)", 0.3, null, 157000000, null, null, null, null, null], ["F", "LỢI NHUẬN", null, null, 2964919410, null, null, null, 1182875137.0833333, null], ["G", "TỶ SUẤT LỢI NHUẬN %", null, null, 0.5005097082953509, null, null, null, 0.5282587704603907, null]], "xlsx": "03.V1_BaoCaoTaiChinh_DuAn-CCTP12_260817.xlsx", "contract": {"date": "02/02/2026", "confirmed": false, "source": "Hợp đồng số 0036/2026/TTHĐ/DB-VONE — không ghi ngày ký rõ trong văn bản, lấy theo ngày tạo file hồ sơ hợp đồng"}}, {"key": "DQM", "name": "VĂN PHÒNG ĐẠI QUANG MINH", "date": "17/08/2026", "doanhthu": {"plan": 10583800000.0, "actual": 529200000.0}, "chiphi": {"plan": 2742275485.0, "actual": 377500935.0}, "lnttt": {"plan": 7841524515.0, "actual": 151699065.0}, "thuong": {"plan": 1176000000.0, "actual": 22754859.75}, "lnst": {"plan": 6665524515.0, "actual": 128944205.25}, "tysuat": {"plan": 0.6297855699276252, "actual": 0.24365874007936508}, "duphong": {"plan": 1058380000.0, "actual": 35279333.33333333}, "fullTable": [["A", "DOANH THU", 1, null, 10583800000, null, null, 11430504000, 529200000, null], [1, "Tạm ứng", null, 529200000, null, null, null, null, null, null], [2, "Phí huy động nhân sự", 0.1, "-", 1058400000, 52920000, 0.08, 1143072000, 0, "01/07/2026"], [3, "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", 0.1, "-", 1058400000, 52920000, 0.08, 1143072000, 0, null], [4, "Sau khi bên B trình bày (Workshop) với Chủ đầu tư về các giải pháp chính cho Kiến Trúc giai đoạn Thiết kế cơ sở", 0.05, "-", 529200000, 26460000, 0.08, 571536000, 0, null], [5, "Sau khi bên B nộp hồ sơ Hardcopy Thiết kế cơ sở Kiến trúc cho bên A", 0.1, "-", 1058400000, 52920000, 0.08, 1143072000, 0, null], [6, "Sau khi Chủ đầu tư phê duyệt Thiết kế cơ sở Kiến Trúc và có văn bản Thẩm định TKCS", 0.1, "-", 1058400000, 52920000, 0.08, 1143072000, 0, null], [7, "Sau khi bên B nộp hồ sơ Thiết kế kỹ thuật Kiến Trúc cho bên A", 0.1, "-", 1058400000, 52920000, 0.08, 1143072000, 0, null], [8, "Sau khi bên B nộp hồ sơ Thiết kê PCCC cho bên A", 0.05, "-", 529200000, 26460000, 0.08, 571536000, 0, null], [9, "Sau khi Chủ đầu tư phê duyệt Thiết kế kỹ thuật và Thiết kế PCCC Kiến Trúc", 0.1, "-", 1058400000, 52920000, 0.08, 1143072000, 0, null], [10, "Sau khi bên B nộp hồ sơ TKTC Kiến Trúc phần Ngầm cho bên A", 0.05, "-", 529200000, 26460000, 0.08, 571536000, 0, null], [11, "Sau khi bên B nộp hồ sơ TKTC Kiến Trúc phần Thân cho bên A", 0.05, null, 529200000, 26460000, 0.08, 571536000, 0, null], [12, "Sau khi CĐT phê duyệt hồ sơ TKTC Kiến Trúc cho bên A", 0.1, null, 1058200000, 105840000, 0.08, 1142856000, 0, null], [13, "Sản phẩm được nghiệm thu, phê duyệt", 0.1, "-", 1058400000, 0, 0.08, 1143072000, 0, null], ["B", "CHI PHÍ", null, null, 2742275485, null, null, 0, 377500935, null], ["B1", "CHI PHÍ NHÀ THẦU PHỤ, NHÀ CUNG CẤP", null, null, 0, null, null, 0, 0, null], [null, null, null, null, 0, null, null, 0, 0, null], ["B2", "CHI PHÍ TIỀN LƯƠNG, THƯỞNG, PHỤ CẤP", null, null, 891617405, null, null, "-", 297205801.6666667, null], ["B2.1", "Lương, thưởng, phụ cấp ( bao gồm  BHXH,YT,TN,KPCD)", null, null, 891617405, null, null, "-", 297205801.6666667, null], ["B3", "CHI PHÍ QLTK/ CP PHÂN BỔ KHÁC ", null, null, 792278080.0000001, null, null, 0, 45015800, null], ["B3.1", "Chi phí overhead (phí khấu hao tài sản, phí thuê MB vp, vp phẩm, và các chi phí khác để duy trì hoạt động Admin hỗ trợ dự án tại VP công ty )", null, null, 792278080.0000001, null, null, null, 45015800, null], ["B4", "CHI PHÍ DỰ PHÒNG", 0.1, null, 1058380000, null, null, "-", 35279333.33333333, null], [null, "Chi phí tiếp khách, in ấn", 0.3, null, 317514000, null, null, null, 0, null], [null, "Chi phí phần mềm", 0.1, null, 105838000, null, null, null, 35279333.33333333, null], [null, "Chi phí công tác, giám sát tác giả", 0.6, null, 635028000, null, null, null, 0, null], ["C", "LỢI NHUẬN", null, null, 7841524515, null, null, null, 151699065, null], ["D", "TỶ SUẤT LỢI NHUẬN TRƯỚC THƯỞNG %", null, null, 0.7408987806836864, null, null, null, 0.28665734126984127, null], ["E", "THƯỞNG DỰ ÁN", 0.15, null, 1176000000, null, null, null, 22754859.75, null], ["E1", "1. Mức thưởng bằng (10% - 20%) tổng mức thưởng thực tế của dự án : E1 = (10% - 20%) X E\n2. Thời gian thưởng: sau khi Hợp đồng dự án được ký kết\n3. Đối tượng khen thưởng: \n+ Nhân sự tham gia trực tiếp báo giá và thương thảo Hợp đồng.\n+ Nhân sự tham gia kiểm tra hồ sơ TKYT (hồ sơ bản vẽ và tính toán) đảm bảo thông số đầu vào cho TKCS.", 0.2, null, 235000000, null, null, null, null, null], ["E2", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E2 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn thẩm định Báo cáo nghiên cứu khả thi.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 294000000, null, null, null, null, null], ["E3", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E3 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn Xin phép xây dựng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 294000000, null, null, null, null, null], ["E4", "1. Mức thưởng bằng (10-15%) tổng mức thưởng thực tế của dự án : E4 = (10-15%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao đưa vào sử dụng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 294000000, null, null, null, null, null], ["E5", "1. Mức thưởng bằng 25%-35% tổng mức thưởng thực tế của dự án : E5 = (25%-35%) X E\n2. Viêc trích thưởng cho quỹ thưởng cho trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…) được thực hiện như sau:\n-  Sau khi dự án hoàn thành thẩm định báo cáo nghiên cứu khả thi: trích thưởng 50% x H.\n- Sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao: trích thưởng 50% x H.\n2. Thời gian thưởng: định kỳ 2 lần/ năm\n+ Lần 1 vào cuối quý 2\n+ Lần 2 vào cuối quý 4.\n3. Đối tượng khen thưởng: Trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…)", 0.35, null, 412000000, null, null, null, null, null], ["F", "LỢI NHUẬN", null, null, 6665524515, null, null, null, 128944205.25, null], ["G", "TỶ SUẤT LỢI NHUẬN %", null, null, 0.6297855699276252, null, null, null, 0.24365874007936508, null]], "xlsx": "03.V1_BaoCaoTaiChinh_DuAn-DQMH_260817.xlsx", "contract": {"date": "03/08/2026", "confirmed": false, "source": "Chưa có hợp đồng chính thức trong hồ sơ — theo Thư Thông báo trúng thầu số 236/2026/CV-DB (ký ngày 03/08/2026)"}}, {"key": "LHA", "name": "LHA - CHUNG CƯ ĐẠI LỘ HÒA BÌNH", "date": "17/08/2026", "doanhthu": {"plan": 1250000000.0, "actual": 135000000.0}, "chiphi": {"plan": 932599650.0, "actual": 88291289.99999999}, "lnttt": {"plan": 317400350.0, "actual": 46708710.000000015}, "thuong": {"plan": 63000000.0, "actual": 9341742.000000004}, "lnst": {"plan": 254400350.0, "actual": 37366968.000000015}, "tysuat": {"plan": 0.20352028, "actual": 0.27679235555555565}, "duphong": {"plan": 125000000.0, "actual": 2083333.3333333333}, "fullTable": [["A", "DOANH THU", 1, null, 1250000000, null, null, 1350000000, 135000000, null], [1, "Phí huy động nhân sự", 0.1, "-", 125000000, 0, 0.08, 135000000, 135000000, "01/07/2026"], [2, "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", 0.1, "-", 125000000, 0, 0.08, 135000000, 0, null], [3, "Sau khi bên B trình bày (Workshop) với Chủ đầu tư về các giải pháp chính cho Kiến Trúc giai đoạn Thiết kế cơ sở", 0.05, "-", 62500000, 0, 0.08, 67500000, 0, null], [4, "Sau khi bên B nộp hồ sơ Hardcopy Thiết kế cơ sở Kiến trúc cho bên A", 0.1, "-", 125000000, 0, 0.08, 135000000, 0, null], [5, "Sau khi Chủ đầu tư phê duyệt Thiết kế cơ sở Kiến Trúc và có văn bản Thẩm định TKCS", 0.1, "-", 125000000, 0, 0.08, 135000000, 0, null], [6, "Sau khi bên B nộp hồ sơ Thiết kế kỹ thuật Kiến Trúc cho bên A", 0.1, "-", 125000000, 0, 0.08, 135000000, 0, null], [7, "Sau khi bên B nộp hồ sơ Thiết kê PCCC cho bên A", 0.05, "-", 62500000, 0, 0.08, 67500000, 0, null], [8, "Sau khi Chủ đầu tư phê duyệt Thiết kế kỹ thuật và Thiết kế PCCC Kiến Trúc", 0.1, "-", 125000000, 0, 0.08, 135000000, 0, null], [9, "Sau khi bên B nộp hồ sơ TKTC Kiến Trúc phần Ngầm cho bên A", 0.05, "-", 62500000, 0, 0.08, 67500000, 0, null], [10, "Sau khi bên B nộp hồ sơ TKTC Kiến Trúc phần Thân cho bên A", 0.05, null, 62500000, null, 0.08, 67500000, null, null], [11, "Sau khi CĐT phê duyệt hồ sơ TKTC Kiến Trúc cho bên A", 0.1, null, 125000000, null, 0.08, 135000000, null, null], [12, "Sản phẩm được nghiệm thu, phê duyệt", 0.1, "-", 125000000, 0, 0.08, 135000000, 0, null], ["B", "CHI PHÍ", null, null, 932599650, null, null, 0, 88291289.99999999, null], ["B1", "CHI PHÍ NHÀ THẦU PHỤ, NHÀ CUNG CẤP", null, null, 0, null, null, 0, 0, null], [null, null, null, null, 0, null, null, 0, 0, null], ["B2", "CHI PHÍ TIỀN LƯƠNG, THƯỞNG, PHỤ CẤP", null, null, 382200340, null, null, "-", 63700056.666666664, null], ["B2.1", "Lương, thưởng, phụ cấp ( bao gồm  BHXH,YT,TN,KPCD)", null, null, 382200340, null, null, "-", 63700056.666666664, null], ["B3", "CHI PHÍ QLTK/ CP PHÂN BỔ KHÁC ", null, null, 425399309.99999994, null, null, 0, 22507900, null], ["B3.1", "Chi phí overhead (phí khấu hao tài sản, phí thuê MB vp, vp phẩm, và các chi phí khác để duy trì hoạt động Admin hỗ trợ dự án tại VP công ty )", null, null, 425399309.99999994, null, null, null, 22507900, null], ["B4", "CHI PHÍ DỰ PHÒNG", 0.1, null, 125000000, null, null, "-", 2083333.3333333333, null], [null, "Chi phí tiếp khách, in ấn", 0.3, null, 37500000, null, null, null, 0, null], [null, "Chi phí phần mềm", 0.1, null, 12500000, null, null, null, 2083333.3333333333, null], [null, "Chi phí công tác, giám sát tác giả", 0.6, null, 75000000, null, null, null, 0, null], ["C", "LỢI NHUẬN", null, null, 317400350, null, null, null, 46708710.000000015, null], ["D", "TỶ SUẤT LỢI NHUẬN TRƯỚC THƯỞNG %", null, null, 0.25392028, null, null, null, 0.34599044444444454, null], ["E", "THƯỞNG DỰ ÁN", 0.2, null, 63000000, null, null, null, 9341742.000000004, null], ["E1", "1. Mức thưởng bằng (10% - 20%) tổng mức thưởng thực tế của dự án : E1 = (10% - 20%) X E\n2. Thời gian thưởng: sau khi Hợp đồng dự án được ký kết\n3. Đối tượng khen thưởng: \n+ Nhân sự tham gia trực tiếp báo giá và thương thảo Hợp đồng.\n+ Nhân sự tham gia kiểm tra hồ sơ TKYT (hồ sơ bản vẽ và tính toán) đảm bảo thông số đầu vào cho TKCS.", 0.2, null, 13000000, null, null, null, null, null], ["E2", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E2 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn thẩm định Báo cáo nghiên cứu khả thi.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 16000000, null, null, null, null, null], ["E3", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E3 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn Xin phép xây dựng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 16000000, null, null, null, null, null], ["E4", "1. Mức thưởng bằng (10-15%) tổng mức thưởng thực tế của dự án : E4 = (10-15%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao đưa vào sử dụng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.25, null, 16000000, null, null, null, null, null], ["E5", "1. Mức thưởng bằng 25%-35% tổng mức thưởng thực tế của dự án : E5 = (25%-35%) X E\n2. Viêc trích thưởng cho quỹ thưởng cho trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…) được thực hiện như sau:\n-  Sau khi dự án hoàn thành thẩm định báo cáo nghiên cứu khả thi: trích thưởng 50% x H.\n- Sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao: trích thưởng 50% x H.\n2. Thời gian thưởng: định kỳ 2 lần/ năm\n+ Lần 1 vào cuối quý 2\n+ Lần 2 vào cuối quý 4.\n3. Đối tượng khen thưởng: Trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…)", 0.35, null, 22000000, null, null, null, null, null], ["F", "LỢI NHUẬN", null, null, 254400350, null, null, null, 37366968.000000015, null], ["G", "TỶ SUẤT LỢI NHUẬN %", null, null, 0.20352028, null, null, null, 0.27679235555555565, null]], "xlsx": "03.V1_BaoCaoTaiChinh_DuAn-LHA_260817.xlsx", "contract": {"date": "14/07/2026", "confirmed": false, "source": "Hợp đồng số 239/2026/HĐ/DB-VONE — không ghi ngày ký rõ trong văn bản (ký điện tử), lấy theo ngày tạo file hồ sơ hợp đồng"}}, {"key": "RedDragon", "name": "RED DRAGON", "date": "17/08/2026", "doanhthu": {"plan": 816000000.0, "actual": 396576000.0}, "chiphi": {"plan": 607392540.0, "actual": 451475850.0}, "lnttt": {"plan": 208607460.0, "actual": -54899850.0}, "thuong": {"plan": 42000000.0, "actual": -10979970.0}, "lnst": {"plan": 166607460.0, "actual": -54899850.0}, "tysuat": {"plan": 0.20417580882352943, "actual": -0.13843462539336723}, "duphong": {"plan": 48960000.0, "actual": 7833600.0}, "fullTable": [["A", "DOANH THU", 1.0000000000000002, null, 816000000, null, null, 881280000, 396576000, null], [1, "Sau khi ký hợp đồng", 0.2, "-", 163200000, "-", 0.08, 176256000, 176256000, null], [2, "Nộp TKCS", 0.25, "-", 204000000, "-", 0.08, 220320000, 220320000, null], [" ", "Duyệt TKCS", 0.05, "-", 40800000, "-", 0.08, 44064000, null, null], [4, "Lập hồ sơ PCCC - TKCS", 0.05, "-", 40800000, "-", 0.08, 44064000, null, null], [5, "Lập hồ sơ PCCC - TKKT", 0.05, "-", 40800000, "-", 0.08, 44064000, null, null], [6, "Nộp TKKT", 0.25, "-", 204000000, "-", 0.08, 220320000, null, null], [7, "Duyệt TKKT", 0.05, "-", 40800000, "-", 0.08, 44064000, null, null], [8, "Nộp TKTC", 0.05, "-", 40800000, "-", 0.08, 44064000, null, null], [9, "Duyệt TKTC", 0.05, "-", 40800000, "-", 0.08, 44064000, null, null], ["B", "CHI PHÍ", null, null, 607392540, null, null, "-", 451475850, null], ["B1", "CHI PHÍ NHÀ THẦU PHỤ, NHÀ CUNG CẤP", null, null, 0, null, null, 0, 0, null], [null, null, null, null, 0, null, null, 0, 0, null], ["B2", "CHI PHÍ TIỀN LƯƠNG, THƯỞNG, PHỤ CẤP", null, null, 263579050, null, null, "-", 263579050, null], ["B2.1", "Lương, thưởng, phụ cấp ( bao gồm  BHXH,YT,TN,KPCD)", null, null, 263579050, null, null, "-", 263579050, null], ["B3", "CHI PHÍ QLTK/ CP PHÂN BỔ KHÁC ", null, null, 294853490, null, null, 0, 180063200, null], ["B3.1", "Chi phí overhead (phí khấu hao tài sản, phí thuê MB vp, vp phẩm, và các chi phí khác để duy trì hoạt động Admin hỗ trợ dự án tại VP công ty )", null, null, 294853490, null, null, null, 180063200, null], ["B4", "CHI PHÍ DỰ PHÒNG", 0.06, null, 48960000, null, null, "-", 7833600, null], [null, "Chi phí tiếp khách, in ấn", 0.24, null, 11750400, null, null, null, 0, null], [null, "Chi phí phần mềm", 0.16, null, 7833600, null, null, null, 7833600, null], [null, "Chi phí công tác, giám sát tác giả", 0.6, null, 29376000, null, null, null, 0, null], ["C", "LỢI NHUẬN", null, null, 208607460, null, null, null, -54899850, null], ["D", "TỶ SUẤT LỢI NHUẬN TRƯỚC THƯỞNG %", null, null, 0.2556463970588235, null, null, null, -0.13843462539336723, null], ["E", "THƯỞNG DỰ ÁN", 0.2, null, 42000000, null, null, null, -10979970, null], ["E1", "1. Mức thưởng bằng (10% - 20%) tổng mức thưởng thực tế của dự án : E1 = (10% - 20%) X E\n2. Thời gian thưởng: sau khi Hợp đồng dự án được ký kết\n3. Đối tượng khen thưởng: \n+ Nhân sự tham gia trực tiếp báo giá và thương thảo Hợp đồng.\n+ Nhân sự tham gia kiểm tra hồ sơ TKYT (hồ sơ bản vẽ và tính toán) đảm bảo thông số đầu vào cho TKCS.", 0.15, null, 6000000, null, null, null, null, null], ["E2", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E2 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn thẩm định Báo cáo nghiên cứu khả thi.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.2, null, 8000000, null, null, null, null, null], ["E3", "1. Mức thưởng bằng (15-25%) tổng mức thưởng thực tế của dự án : E3 = (15-25%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn Xin phép xây dựng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.2, null, 8000000, null, null, null, null, null], ["E4", "1. Mức thưởng bằng (10-15%) tổng mức thưởng thực tế của dự án : E4 = (10-15%) X E\n2. Thời gian thưởng: sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao đưa vào sử dụng.\n3. Đối tượng khen thưởng: \n+ Chủ nhiệm thiết kế giai đoạn triển khai.\n+ Các nhân sự trực tiếp tham gia quản lý/ triển khai KT.", 0.2, null, 8000000, null, null, null, null, null], ["E5", "1. Mức thưởng bằng 25%-35% tổng mức thưởng thực tế của dự án : E5 = (25%-35%) X E\n2. Viêc trích thưởng cho quỹ thưởng cho trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…) được thực hiện như sau:\n-  Sau khi dự án hoàn thành thẩm định báo cáo nghiên cứu khả thi: trích thưởng 50% x H.\n- Sau khi dự án hoàn thành giai đoạn nghiệm thu, bàn giao: trích thưởng 50% x H.\n2. Thời gian thưởng: định kỳ 2 lần/ năm\n+ Lần 1 vào cuối quý 2\n+ Lần 2 vào cuối quý 4.\n3. Đối tượng khen thưởng: Trưởng phòng ban, các bộ phận gián tiếp (BGĐ, kế toán, hành chính…)", 0.3, null, 13000000, null, null, null, null, null], ["F", "LỢI NHUẬN", null, null, 166607460, null, null, null, -54899850, null], ["G", "TỶ SUẤT LỢI NHUẬN %", null, null, 0.20417580882352943, null, null, null, -0.13843462539336723, null]], "xlsx": "03.V1_BaoCaoTaiChinh_DuAn-RedDragon_260817.xlsx", "contract": {"date": "11/11/2025", "confirmed": true, "source": "Hợp đồng số 204/2025/TTHĐ/DB-VONE — ghi rõ ngày ký trong hợp đồng"}}];
+const SUMMARY = {"thu": {"actual": 3706793100, "plan": 11434222710}, "chi": {"actual": 1849545280, "plan": 2977528976.8}, "chenhlech": {"actual": 1857247820, "plan": 8456693733.2}, "tysuat_chenhlech": {"actual": 0.5010389762514665, "plan": 0.739594981458954}, "thuong": {"actual": 85127556.89, "plan": 606920405.175}, "thue": {"actual": 0, "plan": 0}, "loinhuan": {"actual": 1772120263.11, "plan": 7849773328.025}, "tysuat_loinhuan": {"actual": 0.47807369208440575, "plan": 0.6865156930308732}};
+const MONTHLY = [{"label": "T09/25", "month": "09", "year": "2025", "thu": {"plan": 0, "actual": 0}, "chi": {"plan": 0, "actual": 64539000.0}, "loinhuan": {"plan": 0, "actual": -64539000.0}}, {"label": "T10/25", "month": "10", "year": "2025", "thu": {"plan": 0, "actual": 0}, "chi": {"plan": 0, "actual": 11265600.0}, "loinhuan": {"plan": 0, "actual": -11265600.0}}, {"label": "T11/25", "month": "11", "year": "2025", "thu": {"plan": 0, "actual": 0}, "chi": {"plan": 0, "actual": 35073000.0}, "loinhuan": {"plan": 0, "actual": -35073000.0}}, {"label": "T12/25", "month": "12", "year": "2025", "thu": {"plan": 0, "actual": 176256000.0}, "chi": {"plan": 0, "actual": 49115500.0}, "loinhuan": {"plan": 0, "actual": 127140500.0}}, {"label": "T01/26", "month": "01", "year": "2026", "thu": {"plan": 0, "actual": 0}, "chi": {"plan": 178510000.0, "actual": 176826186.0}, "loinhuan": {"plan": -178510000.0, "actual": -176826186.0}}, {"label": "T02/26", "month": "02", "year": "2026", "thu": {"plan": 0, "actual": 639770400.0}, "chi": {"plan": 178510000.0, "actual": 332003060.0}, "loinhuan": {"plan": -178510000.0, "actual": 307767340.0}}, {"label": "T03/26", "month": "03", "year": "2026", "thu": {"plan": 0, "actual": 860090400.0}, "chi": {"plan": 178510000.0, "actual": 142175563.0}, "loinhuan": {"plan": -178510000.0, "actual": 717914837.0}}, {"label": "T04/26", "month": "04", "year": "2026", "thu": {"plan": 0, "actual": 205465000.0}, "chi": {"plan": 178510000.0, "actual": 233281224.0}, "loinhuan": {"plan": -178510000.0, "actual": -27816224.0}}, {"label": "T05/26", "month": "05", "year": "2026", "thu": {"plan": 0, "actual": 319885200.0}, "chi": {"plan": 178510000.0, "actual": 380421182.0}, "loinhuan": {"plan": -178510000.0, "actual": -60535982.0}}, {"label": "T06/26", "month": "06", "year": "2026", "thu": {"plan": 0, "actual": 0}, "chi": {"plan": 320983000.0, "actual": 346784709.0}, "loinhuan": {"plan": -320983000.0, "actual": -346784709.0}}, {"label": "T07/26", "month": "07", "year": "2026", "thu": {"plan": 0, "actual": 1303970400.0}, "chi": {"plan": 179575000.0, "actual": 413670256.0}, "loinhuan": {"plan": -179575000.0, "actual": 890300144.0}}, {"label": "T08/26", "month": "08", "year": "2026", "thu": {"plan": 1222344000.0, "actual": 0}, "chi": {"plan": 577958000.0, "actual": 0}, "loinhuan": {"plan": 644386000.0, "actual": 0}}, {"label": "T09/26", "month": "09", "year": "2026", "thu": {"plan": 3226789980.0, "actual": 0}, "chi": {"plan": 432606500.0, "actual": 0}, "loinhuan": {"plan": 2794183480.0, "actual": 0}}, {"label": "T10/26", "month": "10", "year": "2026", "thu": {"plan": 2830030380.0, "actual": 0}, "chi": {"plan": 1326031676.8000002, "actual": 0}, "loinhuan": {"plan": 1503998703.2, "actual": 0}}, {"label": "T11/26", "month": "11", "year": "2026", "thu": {"plan": 1744749180.0, "actual": 0}, "chi": {"plan": 432606500.0, "actual": 0}, "loinhuan": {"plan": 1312142680.0, "actual": 0}}, {"label": "T12/26", "month": "12", "year": "2026", "thu": {"plan": 2366245170.0, "actual": 0}, "chi": {"plan": 432606500.0, "actual": 0}, "loinhuan": {"plan": 1933638670.0, "actual": 0}}];
+const F2_TABLES = {"thu": [[1, "Red Dragon", 816000000, 881280000, 1.0000000000000002, 0, 0.45, 396576000, 0.5, 440640000], [1.1, "Sau khi ký hợp đồng", 163200000, 176256000, 0.2, 0, 0.2, 176256000, "-", "-"], [1.2, "Nộp TKCS", 204000000, 220320000, 0.25, 0, 0.25, 220320000, "-", "-"], [1.3, "Duyệt TKCS", 40800000, 44064000, 0.05, 0, "-", 0, 0.05, 44064000], [1.4, "Lập hồ sơ PCCC - TKCS", 40800000, 44064000, 0.05, 0, "-", 0, 0.05, 44064000], [1.5, "Lập hồ sơ PCCC - TKKT", 40800000, 44064000, 0.05, 0, "-", 0, 0.05, 44064000], [1.6, "Nộp TKKT", 204000000, 220320000, 0.25, 0, "-", 0, 0.25, 220320000], [1.7, "Duyệt TKKT", 40800000, 44064000, 0.05, 0, "-", 0, 0.05, 44064000], [1.8, "Nộp TKTC", 40800000, 44064000, 0.05, 0, "-", 0, 0.05, 44064000], [1.9, "Duyệt TKTC", 40800000, 44064000, 0.05, 0, "-", 0, "-", "-"], ["Lợi nhuận dự án dự kiến", null, "-", "-", 0.26, "-", 0.117, 46399392, 0.13, 57283200], [2, "CCTP1 & CCTP 2", 5850000000, 6397704000, 1, 0, 0.35, 2239196400, 0.44999999999999996, 2878966800], [2.1, "Phí huy động nhân sự", 592380000, 639770400, 0.1, 0, 0.1, 639770400, "-", "-"], [2.2, "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", 592380000, 639770400, 0.1, 0, 0.1, 639770400, "-", "-"], [2.3, "Hoàn thành workshop với CĐT", 296190000, 319885200, 0.05, 0, 0.05, 319885200, "-", "-"], [2.4, "Sau khi bên B nộp hồ sơ hardcopy TKCS cho bên A", 592380000, 639770400, 0.1, 0, 0.1, 639770400, "-", "-"], [2.5, "CĐT phê duyệt TKCS và có VB thẩm định TKCS", 592380000, 639770400, 0.1, 0, "-", 0, 0.1, 639770400], [2.6, "Sau khi bên B nộp hồ sơ hardcopy TKKT cho bên A", 592380000, 639770400, 0.1, 0, "-", 0, 0.1, 639770400], [2.7, "Sau khi bên B nộp hồ sơ PCCC cho bên A", 296190000, 319885200, 0.05, 0, "-", 0, 0.05, 319885200], [2.8, "Sau khi CĐT phê duyệt TKKT và PCCC", 592380000, 639770400, 0.1, 0, "-", 0, 0.1, 639770400], [2.9, "Sau khi bên B nộp hồ sơ hardcopy TKTC ngầm cho bên A", 296190000, 319885200, 0.05, 0, "-", 0, 0.05, 319885200], [2.1, "Sau khi bên B nộp hồ sơ hardcopy TKTC thân cho bên A", 296190000, 319885200, 0.05, 0, "-", 0, 0.05, 319885200], [2.11, "Sau khi CĐT phê duyệt hồ sơ TKTC ", 592380000, 639770400, 0.1, 0, "-", 0, "-", "-"], [2.12, "Sau khi dự án hoàn thành, nghiệm thu và đưa vào sử dụng", 592380000, 639770400, 0.1, 0, "-", 0, "-", "-"], ["Lợi nhuận dự án dự kiến", null, 3451500000, "-", 0.59, "-", 0.2065, 462394056.59999996, 0.26549999999999996, 764365685.3999999], [3, "C8A", 2054650000, 2219022000, 1, 205465000, 0.2, 406820700, 0.45000000000000007, 898703910], [3.1, "Tạm ứng", 205465000, "-", "-", 0, 0.1, 205465000, null, null], [3.2, "Hoàn thành workshop với CĐT", 205465000, 221902200, 0.1, 20546500, 0.1, 201355700, "-", "-"], [3.3, "Sau khi bên B nộp hồ sơ hardcopy TKCS cho bên A", 205465000, 221902200, 0.1, 20546500, "-", 0, 0.1, 199711980], [3.4, "CĐT phê duyệt TKCS và có VB thẩm định TKCS", 205465000, 221902200, 0.1, 20546500, "-", 0, 0.1, 199711980], [3.5, "Sau khi bên B nộp hồ sơ PCCC cho bên A", 205465000, 221902200, 0.1, 20546500, "-", 0, 0.1, 199711980], [3.6, "Sau khi bên B nộp hồ sơ hardcopy TKKT cho bên A", 308197500, 332853300, 0.15, 30819750, "-", 0, 0.15, 299567970], [3.7, "Sau khi CĐT phê duyệt TKKT và PCCC", 205465000, 221902200, 0.1, 20546500, "-", 0, "-", "-"], [3.8, "Sau khi bên B nộp hồ sơ hardcopy TKTC ngầm cho bên A", 102732500, 110951100, 0.05, 10273250, "-", 0, "-", "-"], [3.9, "Sau khi bên B nộp hồ sơ hardcopy TKTC thân cho bên A", 205465000, 221902200, 0.1, 20546500, "-", 0, "-", "-"], [4, "Sau khi CĐT phê duyệt hồ sơ TKTC ", 205465000, 221902200, 0.1, 41093000, "-", 0, "-", "-"], [4.1, "Sản phẩm được nghiệm thu, phê duyệt", 205465000, 221902200, 0.1, 0, "-", 0, "-", "-"], ["Lợi nhuận dự án dự kiến", null, 719127500, "-", 0.35, "-", 0.06999999999999999, 14382549.999999998, 0.1575, 141545865.825], ["4", "LHA", 1250000000, 1350000000, 1, 0, 0.1, 135000000, 0.49999999999999994, 675000000], ["4.1", "Phí huy động nhân sự", 125000000, 135000000, 0.1, 0, 0.1, 135000000, "-", "-"], ["4.2", "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", 125000000, 135000000, 0.1, 0, "-", 0, 0.1, 135000000], ["4.3", "Sau khi bên B trình bày (Workshop) với Chủ đầu tư về các giải pháp chính cho Kiến Trúc trong giai đoạn Thiết kế cơ sở", 62500000, 67500000, 0.05, 0, "-", 0, 0.05, 67500000], ["4.4", "Sau khi bên B nộp hồ sơ hardcopy Thiết kế cơ sở Kiến trúc cho Bên A", 125000000, 135000000, 0.1, 0, "-", 0, 0.1, 135000000], ["4.5", "Sau khi Chủ đầu tư phê duyệt Thiết kế cơ sở Kiến trúc và có văn bản thẩm định TKCS", 125000000, 135000000, 0.1, 0, "-", 0, 0.1, 135000000], ["4.6", "Sau khi bên B nộp hồ sơ hardcopy Thiết kế kỹ thuật Kiến trúc cho CĐT", 125000000, 135000000, 0.1, 0, "-", 0, 0.1, 135000000], ["4.7", "Sau khi bên B nộp hồ sơ thiết kế PCCC Kiến trúc cho Bên A", 62500000, 67500000, 0.05, 0, "-", 0, 0.05, 67500000], ["4.8", "Sau khi Chủ đầu tư phê duyệt Thiết kế kỹ thuật và PCCC Kiến trúc", 125000000, 135000000, 0.1, 0, "-", 0, "-", "-"], ["4.9", "Sau khi bên B nộp hồ sơ hardcopy Thiết kế bản vẽ thi công Kiến trúc phần ngầm cho Chủ đầu tư", 62500000, 67500000, 0.05, 0, "-", 0, "-", "-"], ["4.10", "Sau khi bên B nộp hồ sơ hardcopy Thiết kế bản vẽ thi công Kiến trúc phần thân cho Chủ đầu tư", 62500000, 67500000, 0.05, 0, "-", 0, "-", "-"], ["4.11", "Sau khi Chủ đầu tư phê duyệt Thiết kế bản vẽ thi công Kiến trúc", 125000000, 135000000, 0.1, 0, "-", 0, "-", "-"], ["4.12", "Sau khi dự án hoàn thành và được nghiệm thu đưa vào sử dụng", 125000000, 135000000, 0.1, 0, "-", 0, "-", "-"], ["Lợi nhuận dự án dự kiến", null, 312500000, "-", 0.25, "-", 0.025, 3375000, 0.12499999999999999, 84374999.99999999], ["5", "DQMH", 10584000000, 11430720000, 1, 529200000, 0.05, 529200000, 0.6, 6540912000], ["5.1", "Tạm ứng", 529200000, "-", "-", 0, 0.05, 529200000, null, null], ["5.2", "Phí huy động nhân sự", 1058400000, 1143072000, 0.1, 52920000, "-", 0, 0.1, 1090152000], ["5.3", "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", 1058400000, 1143072000, 0.1, 52920000, "-", 0, 0.1, 1090152000], ["5.4", "Sau khi bên B trình bày (Workshop) với Chủ đầu tư về các giải pháp chính cho Kiến Trúc giai đoạn Thiết kế cơ sở", 529200000, 571536000, 0.05, 26460000, "-", 0, 0.05, 545076000], ["5.5", "Sau khi bên B nộp hồ sơ Hardcopy Thiết kế cơ sở Kiến trúc cho bên A", 1058400000, 1143072000, 0.1, 52920000, "-", 0, 0.1, 1090152000], ["5.6", "Sau khi Chủ đầu tư phê duyệt Thiết kế cơ sở Kiến Trúc và có văn bản Thẩm định TKCS", 1058400000, 1143072000, 0.1, 52920000, "-", 0, 0.1, 1090152000], ["5.7", "Sau khi bên B nộp hồ sơ Thiết kế kỹ thuật Kiến Trúc cho bên A", 1058400000, 1143072000, 0.1, 52920000, "-", 0, 0.1, 1090152000], ["5.8", "Sau khi bên B nộp hồ sơ Thiết kê PCCC cho bên A", 529200000, 571536000, 0.05, 26460000, "-", 0, 0.05, 545076000], ["5.9", "Sau khi Chủ đầu tư phê duyệt Thiết kế kỹ thuật và Thiết kế PCCC Kiến Trúc", 1058400000, 1143072000, 0.1, 52920000, "-", 0, "-", "-"], ["5.10", "Sau khi bên B nộp hồ sơ TKTC Kiến Trúc phần Ngầm cho bên A", 529200000, 571536000, 0.05, 26460000, "-", 0, "-", "-"], ["5.11", "Sau khi bên B nộp hồ sơ TKTC Kiến Trúc phần Thân cho bên A", 529200000, 571536000, 0.05, 26460000, "-", 0, "-", "-"], ["5.12", "Sau khi CĐT phê duyệt hồ sơ TKTC Kiến Trúc cho bên A", 1058400000, 1143072000, 0.1, 105840000, "-", 0, "-", "-"], ["5.13", "Sản phẩm được nghiệm thu, phê duyệt", 1058400000, 1143072000, 0.1, 0, "-", 0, "-", "-"], ["Lợi nhuận dự án tối thiểu", null, 7832160000, "-", 0.74, "-", 0.037, 19580400, 0.444, 2904164928]], "chi": [[1, "Chi phí đầu tư", 124707800, 6719800, null, "Phát sinh tiền chi phí phần mềm (đã bao gồm trong chi phí Overhead văn phòng) :"], [null, "Tiền cọc văn phòng", 60000000, null, null, "2 license Autodesk (đã mua 1)"], [null, "Tên miền Website (PA Vietnam)", 450000, 1000000, null, "11 license Windows 11"], [null, "Dịch vụ email (Mát Bão)", 2518800, 1579800, null, "2 license Office Home (mỗi license share được cho 5 người)"], [null, "Đăng ký Internet", 4539000, 4140000, null, "10 license Revit Student có thời hạn 1 năm"], [null, "Mua BHTNHH Công ty", 57200000, null, null, null], [2, "Chi phí lương", 1134602007, 1845414176.8000002, null, null], [null, "Chi phí lương nhân sự", 832001729, 797729000, null, null], [null, "Đóng BHXH, CPCĐ", 107475000, 234260000, null, null], [null, "Đóng thuế GTGT", 195125278, 813425176.8000001, null, null], [3, "Chi phí Overhead", 590235473, 1125395000, null, null]], "thuongDuAn": [["Red Dragon", 9279878.4, 11456640], ["CCTP1 & CCTP 2", 69359108.49, 114654852.80999997], ["C8A", 2876510, 28309173.165], ["LHA", 675000, 16874999.999999996], ["DQMH", 2937060, 435624739.2], ["TỔNG CỘNG", 85127556.89, 606920405.175]]};
+const F3_TABLE = {"months": ["T09/25", "T10/25", "T11/25", "T12/25", "T01/26", "T02/26", "T03/26", "T04/26", "T05/26", "T06/26", "T07/26", "T08/26", "T09/26", "T10/26", "T11/26", "T12/26"], "sections": [{"label": "A. TỔNG THU — theo dự án và mốc thanh toán", "rows": [[1, "Red Dragon", null, null, null, null, null, null, null, 176256000, null, null, null, null, null, 220320000, null, null, null, null, null, null, null, null, 132192000, null, null, null, 220320000, null, null, null, 44064000, null], [1.1, "Sau khi ký hợp đồng", null, null, null, null, null, null, null, 176256000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [1.2, "Nộp TKCS", null, null, null, null, null, null, null, null, null, null, null, null, null, 220320000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [1.3, "Duyệt TKCS", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 44064000, null, null, null, null, null, null, null, null, null], [1.4, "Lập hồ sơ PCCC - TKCS", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 44064000, null, null, null, null, null, null, null, null, null], [1.5, "Lập hồ sơ PCCC - TKKT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 44064000, null, null, null, null, null, null, null, null, null], [1.6, "Nộp TKKT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 220320000, null, null, null, null, null], [1.7, "Duyệt TKKT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 44064000, null], [1.8, "Nộp TKTC", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [1.9, "Duyệt TKTC", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [2, "CCTP1 & CCTP 2", null, null, null, null, null, null, null, null, null, null, null, 639770400, null, 639770400, null, null, null, 319885200, null, null, null, 639770400, null, null, 1599426000, null, 639770400, null, 319885200, null, 319885200, null], [2.1, "Phí huy động nhân sự", null, null, null, null, null, null, null, null, null, null, null, 639770400, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [2.2, "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", null, null, null, null, null, null, null, null, null, null, null, null, null, 639770400, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [2.3, "Hoàn thành workshop với CĐT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 319885200, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [2.4, "Sau khi bên B nộp hồ sơ hardcopy TKCS cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 639770400, "-", null, null, null, null, null, null, null, null, null], [2.5, "CĐT phê duyệt TKCS và có VB thẩm định TKCS", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 639770400, null, "-", null, null, null, null, null], [2.6, "Sau khi bên B nộp hồ sơ hardcopy TKKT cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 639770400, null, null, null, null, null, null, null], [2.7, "Sau khi bên B nộp hồ sơ PCCC cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 319885200, null, null, null, null, null, null, null], [2.8, "Sau khi CĐT phê duyệt TKKT và PCCC", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 639770400, null, null, null, null, null], [2.9, "Sau khi bên B nộp hồ sơ hardcopy TKTC ngầm cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 319885200, null, null, null], [2.1, "Sau khi bên B nộp hồ sơ hardcopy TKTC thân cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 319885200, null], [2.11, "Sau khi CĐT phê duyệt hồ sơ TKTC ", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [2.12, "Sau khi dự án hoàn thành, nghiệm thu và đưa vào sử dụng", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [3, "C8A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 205465000, null, null, null, null, null, null, null, null, 199711980, null, 199711980, null, 199711980, null, 299567970, null], [3.1, "Tạm ứng", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 205465000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [3.2, "Hoàn thành workshop với CĐT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 201355700, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [3.3, "Sau khi bên B nộp hồ sơ hardcopy TKCS cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 199711980, null, null, null, null, null, null, null], [3.4, "CĐT phê duyệt TKCS và có VB thẩm định TKCS", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 199711980, null, null, null, null, null], [3.5, "Sau khi bên B nộp hồ sơ PCCC cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 199711980, null, null, null], [3.6, "Sau khi bên B nộp hồ sơ hardcopy TKKT cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 299567970, null], [3.7, "Sau khi CĐT phê duyệt TKKT và PCCC", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [3.8, "Sau khi bên B nộp hồ sơ hardcopy TKTC ngầm cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [3.9, "Sau khi bên B nộp hồ sơ hardcopy TKTC thân cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [3.1, "Sau khi CĐT phê duyệt hồ sơ TKTC ", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [3.11, "Sản phẩm được nghiệm thu, phê duyệt", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["4", "LHA", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 135000000, null, null, 337500000, null, 135000000, null, 135000000, null, 67500000, null], ["4.1", "Phí huy động nhân sự", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 135000000, null, null, null, null, null, null, null, null, null, null], ["4.2", "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 135000000, null, null, null, null, null, null, null], ["4.3", "Sau khi bên B trình bày (Workshop) với Chủ đầu tư về các giải pháp chính cho Kiến Trúc trong giai đoạn Thiết kế cơ sở", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 67500000, null, null, null, null, null, null, null], ["4.4", "Sau khi bên B nộp hồ sơ hardcopy Thiết kế cơ sở Kiến trúc cho Bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 135000000, null, null, null, null, null, null, null], ["4.5", "Sau khi Chủ đầu tư phê duyệt Thiết kế cơ sở Kiến trúc và có văn bản thẩm định TKCS", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 135000000, null, null, null, null, null], ["4.6", "Sau khi bên B nộp hồ sơ hardcopy Thiết kế kỹ thuật Kiến trúc cho CĐT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 135000000, null, null, null], ["4.7", "Sau khi bên B nộp hồ sơ thiết kế PCCC Kiến trúc cho Bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 67500000, null], ["4.8", "Sau khi Chủ đầu tư phê duyệt Thiết kế kỹ thuật và PCCC Kiến trúc", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["4.9", "Sau khi bên B nộp hồ sơ hardcopy Thiết kế bản vẽ thi công Kiến trúc phần ngầm cho Chủ đầu tư", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["4.10", "Sau khi bên B nộp hồ sơ hardcopy Thiết kế bản vẽ thi công Kiến trúc phần thân cho Chủ đầu tư", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["4.11", "Sau khi Chủ đầu tư phê duyệt Thiết kế bản vẽ thi công Kiến trúc", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["4.12", "Sau khi dự án hoàn thành và được nghiệm thu đưa vào sử dụng", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["5", "DQMH", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 529200000, 1090152000, null, 1090152000, null, 1635228000, null, 1090152000, null, 1635228000, null], ["5.1", "Tạm ứng", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 529200000, null, null, null, null, null, null, null, null, null, null], ["5.2", "Phí huy động nhân sự", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1090152000, null, null, null, null, null, null, null, null, null], ["5.3", "Hoàn thành kiểm tra và hoàn thiện thiết kế concept hiện hữu", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1090152000, null, null, null, null, null, null, null], ["5.4", "Sau khi bên B trình bày (Workshop) với Chủ đầu tư về các giải pháp chính cho Kiến Trúc giai đoạn Thiết kế cơ sở", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 545076000, null, null, null, null, null], ["5.5", "Sau khi bên B nộp hồ sơ Hardcopy Thiết kế cơ sở Kiến trúc cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1090152000, null, null, null, null, null], ["5.6", "Sau khi Chủ đầu tư phê duyệt Thiết kế cơ sở Kiến Trúc và có văn bản Thẩm định TKCS", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1090152000, null, null, null], ["5.7", "Sau khi bên B nộp hồ sơ Thiết kế kỹ thuật Kiến Trúc cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1090152000, null], ["5.8", "Sau khi bên B nộp hồ sơ Thiết kê PCCC cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 545076000, null], ["5.9", "Sau khi Chủ đầu tư phê duyệt Thiết kế kỹ thuật và Thiết kế PCCC Kiến Trúc", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["5.10", "Sau khi bên B nộp hồ sơ TKTC Kiến Trúc phần Ngầm cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["5.11", "Sau khi bên B nộp hồ sơ TKTC Kiến Trúc phần Thân cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["5.12", "Sau khi CĐT phê duyệt hồ sơ TKTC Kiến Trúc cho bên A", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], ["5.13", "Sản phẩm được nghiệm thu, phê duyệt", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]]}, {"label": "B. TỔNG CHI — theo hạng mục", "rows": [[1, "Chi phí đầu tư", null, 64539000, null, 2020800, null, null, null, null, null, 948000, null, 57200000, null, null, null, null, null, null, null, 42260000, null, 65000000, 1000000, null, null, null, null, null, null, null, null, null], [null, "Tiền cọc văn phòng", null, 60000000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [null, "Tên miền Website\n(PA Vietnam)", null, null, null, 450000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1000000, null, null, null, null, null, null, null, null, null], [null, "Dịch vụ email\n(Mát Bão)", null, null, null, 1570800, null, null, null, null, null, 948000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1579800, null, null, null, null, null], [null, "Đăng ký Internet", null, 4539000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 4140000, null, null, null, null, null], [null, "Mua BHTNHH Công ty", null, null, null, null, null, null, null, null, null, null, null, 57200000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], [2, "Chi phí lương nhân sự", null, null, null, 9244800, null, 35073000, null, 49115500, null, 115315686, null, 79347250, null, 95998063, null, 99195604, null, 221286109, 142473000, 161688179, 179575000, 268337816, 201879000, null, 207527500, null, 207527500, null, 207527500, null, 207527500, null], [null, "Chi phí lương nhân sự", null, null, null, 9244800, null, 35073000, null, 47180500, null, 109940686, null, 70102250, null, 86753063, null, 89950604, null, 104171500, 129048000, 130068179, 162095000, 149517147, 158019000, null, 159927500, null, 159927500, null, 159927500, null, 159927500, null], [null, "Đóng BHXH", null, null, null, null, null, null, null, 1935000, null, 5375000, null, 9245000, null, 9245000, null, 9245000, null, 7310000, 10965000, 30080000, 14620000, 30080000, 41280000, null, 44800000, null, 44800000, null, 44800000, null, 44800000, null], [null, "Đóng CPCĐ", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 1540000, 2460000, 1540000, 2860000, 1880000, 2580000, null, 2800000, null, 2800000, null, 2800000, null, 2800000, null], [null, "Đóng thuế GTGT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 108264609, null, 0, 0, 86860669, 0, null, 0, null, null, null, 0, null, 0, null], [3, "Chi phí Overhead", null, null, null, "-", null, "-", null, "-", 178510000, 47562500, 178510000, 31905810, 178510000, 46177500, 178510000, 82285620, 178510000, 159135073, 178510000, 142836530, "-", 80332440, 225079000, null, 225079000, null, 225079000, null, 225079000, null, 225079000, null]]}, {"label": "C-E. Thưởng & Chênh lệch thu chi trong tháng", "rows": [["C", "THƯỞNG DỰ ÁN", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 51800000, null, null, null, null, null, null, 150000000, null, null, null, 813425176.8000001, null, null, null, null, null], ["D", "THƯỞNG CÔNG TY", null, null, null, null, null, null, null, null, null, 13000000, null, 163550000, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 80000000, null, null, null, null, null], ["E", "CHÊNH LỆCH THU CHI TRONG THÁNG", null, -64539000, null, -11265600, null, -35073000, null, 127140500, null, -176826186, null, 307767340, null, 717914837, null, -27816224, null, -60535982, -320983000, null, null, 890300144, 644386000, null, 2794183480, null, 1503998703.1999998, null, 1312142680, null, 1933638670, null]]}]};
+const STAFFING = [{"key": "C8A", "name": "C8A", "people": [{"nickname": "Hải", "fullname": "Huỳnh Chí Hải", "role": "Trưởng Nhóm triển khai", "note": null, "tkcs": 1.0, "tkkt": 0.5, "tktc": 0.25, "gstg": 0.1}, {"nickname": "Mai", "fullname": "Nguyễn Hoàng Như Mai", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 0.75, "tktc": 0.5, "gstg": 0.1}, {"nickname": "Thịnh", "fullname": "Ngô Đức Thịnh", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.25, "tkkt": 0.75, "tktc": 0.5, "gstg": 0.0}, {"nickname": "Ngọc", "fullname": "Nguyễn Hiếu Hồng Ngọc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.75, "tkkt": 0.75, "tktc": 0.5, "gstg": 0.0}, {"nickname": "Phúc", "fullname": "Dương Đại Phúc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.5, "tkkt": 0.75, "tktc": 0.5, "gstg": 0.0}, {"nickname": "Như", "fullname": "Đỗ Quỳnh Như", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.25, "tkkt": 0.75, "tktc": 0.5, "gstg": 0.0}]}, {"key": "CCTP", "name": "CCTP 1 & 2", "people": [{"nickname": "Tùng", "fullname": "Nguyễn Tạ Sơn Tùng", "role": "Trưởng Nhóm triển khai", "note": null, "tkcs": 1.0, "tkkt": 0.5, "tktc": 0.5, "gstg": 0.1}, {"nickname": "Ngọc", "fullname": "Nguyễn Hiếu Hồng Ngọc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 1.0, "tktc": 0.75, "gstg": 0.1}, {"nickname": "Phúc", "fullname": "Dương Đại Phúc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 1.0, "tktc": 0.75, "gstg": 0.1}, {"nickname": "Thịnh", "fullname": "Ngô Đức Thịnh", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 1.0, "tktc": 0.75, "gstg": 0.1}, {"nickname": "Mai", "fullname": "Nguyễn Hoàng Như Mai", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.0, "tkkt": 1.0, "tktc": 0.75, "gstg": 0.1}, {"nickname": "Trí", "fullname": "Hồ Tâm Trí", "role": "Trưởng Nhóm triển khai", "note": null, "tkcs": 0.0, "tkkt": 0.25, "tktc": 0.15, "gstg": 0.0}, {"nickname": "Như", "fullname": "Đỗ Quỳnh Như", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.0, "tkkt": 0.25, "tktc": 0.15, "gstg": 0.0}, {"nickname": "Khương", "fullname": "Nguyễn Nhựt Khương", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.0, "tkkt": 0.25, "tktc": 0.15, "gstg": 0.0}]}, {"key": "DQM", "name": "VĂN PHÒNG ĐẠI QUANG MINH", "people": [{"nickname": "Tùng", "fullname": "Nguyễn Tạ Sơn Tùng", "role": "Trưởng Nhóm triển khai", "note": null, "tkcs": 1.0, "tkkt": 0.75, "tktc": 0.1, "gstg": 0.1}, {"nickname": "Tín", "fullname": "Thân Mạnh Tín", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 1.0, "tktc": 0.75, "gstg": 0.1}, {"nickname": "Trí", "fullname": "Hồ Tâm Trí", "role": "Trưởng Nhóm triển khai", "note": null, "tkcs": 1.0, "tkkt": 0.75, "tktc": 0.5, "gstg": 0.0}, {"nickname": "Ngọc", "fullname": "Nguyễn Hiếu Hồng Ngọc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.25, "tkkt": 0.25, "tktc": 0.25, "gstg": 0.0}, {"nickname": "Phúc", "fullname": "Dương Đại Phúc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 1.0, "tktc": 0.75, "gstg": 0.0}, {"nickname": "Khương", "fullname": "Nguyễn Nhựt Khương", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 1.0, "tktc": 0.75, "gstg": 0.1}]}, {"key": "LHA", "name": "LHA - CHUNG CƯ ĐẠI LỘ HÒA BÌNH", "people": [{"nickname": "Hải", "fullname": "Huỳnh Chí Hải", "role": "Trưởng Nhóm triển khai", "note": null, "tkcs": 0.5, "tkkt": 0.25, "tktc": 0.1, "gstg": 0.1}, {"nickname": "Mai", "fullname": "Nguyễn Hoàng Như Mai", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.75, "tkkt": 0.5, "tktc": 0.25, "gstg": 0.1}, {"nickname": "Thịnh", "fullname": "Ngô Đức Thịnh", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.5, "tkkt": 0.25, "tktc": 0.1, "gstg": 0.0}, {"nickname": "Ngọc", "fullname": "Nguyễn Hiếu Hồng Ngọc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.75, "tkkt": 0.5, "tktc": 0.25, "gstg": 0.0}, {"nickname": "Phúc", "fullname": "Dương Đại Phúc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.5, "tkkt": 0.25, "tktc": 0.1, "gstg": 0.0}, {"nickname": "Như", "fullname": "Đỗ Quỳnh Như", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.75, "tkkt": 0.5, "tktc": 0.25, "gstg": 0.0}]}, {"key": "RedDragon", "name": "RED DRAGON", "people": [{"nickname": "Duy", "fullname": "Đỗ Công Duy", "role": "Kiến trúc sư triển khai", "note": "Đã nghỉ việc từ 20/04/2026", "tkcs": 1.0, "tkkt": 0.5, "tktc": 0.0, "gstg": 0.0}, {"nickname": "Thịnh", "fullname": "Ngô Đức Thịnh", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 0.75, "tktc": 0.5, "gstg": 0.1}, {"nickname": "Ngọc", "fullname": "Nguyễn Hiếu Hồng Ngọc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 1.0, "tkkt": 0.75, "tktc": 0.0, "gstg": 0.0}, {"nickname": "Phúc", "fullname": "Dương Đại Phúc", "role": "Kiến trúc sư triển khai", "note": null, "tkcs": 0.0, "tkkt": 0.75, "tktc": 0.0, "gstg": 0.0}]}];
+const PAYROLL_TABLE = {"title": "BẢNG TỔNG HỢP LƯƠNG THƯỞNG CÁN BỘ NHÂN VIÊN — THÁNG 07/2026", "rows": [{"stt": 1, "ma_nv": "VONE01", "ho_ten": "Niê Đào Đức Nguyên", "nam_sinh": "17/05/1987", "ngay_vao": "13/10/2025", "ngay_ket_thuc": "-", "y2025": {"tong_luong": 26617500, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 26617500}, "y2026": {"tong_luong": 184235000, "thuong_sn": 1000000, "thuong_da": 0, "thuong_tet_tay": 2000000, "thuong_tet_ta": 30000000, "tong_cong": 217235000}, "ty_le": 0.17911905989632806, "bhxh": 23040000}, {"stt": 2, "ma_nv": "VONE02", "ho_ten": "Hoàng Công Thao", "nam_sinh": "04/03/1996", "ngay_vao": "01/11/2025", "ngay_ket_thuc": "-", "y2025": {"tong_luong": 64125000, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 64125000}, "y2026": {"tong_luong": 224515000, "thuong_sn": 1000000, "thuong_da": 10560000, "thuong_tet_tay": 2000000, "thuong_tet_ta": 96000000, "tong_cong": 334075000}, "ty_le": 0.4879852125693161, "bhxh": 42560000}, {"stt": 3, "ma_nv": "VONE03", "ho_ten": "Đỗ Công Duy", "nam_sinh": "29/03/1998", "ngay_vao": "13/10/2025", "ngay_ket_thuc": "20/04/2026", "y2025": {"tong_luong": 0, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 0}, "y2026": {"tong_luong": 90199687, "thuong_sn": 500000, "thuong_da": 5000000, "thuong_tet_tay": 2000000, "thuong_tet_ta": 8000000, "tong_cong": 105699687}, "ty_le": 0.1718409510667149, "bhxh": 11520000}, {"stt": 4, "ma_nv": "VONE03", "ho_ten": "Ngô Đức Thịnh", "nam_sinh": "12/04/2000", "ngay_vao": "01/01/2026", "ngay_ket_thuc": "01/01/2027", "y2025": {"tong_luong": 22747800, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 22747800}, "y2026": {"tong_luong": 116930600, "thuong_sn": 500000, "thuong_da": 7700000, "thuong_tet_tay": 2000000, "thuong_tet_ta": 7000000, "tong_cong": 134130600}, "ty_le": 0.1470957987045307, "bhxh": 17920000}, {"stt": 5, "ma_nv": "VONE04", "ho_ten": "Dương Đại Phúc", "nam_sinh": "25/01/2001", "ngay_vao": "10/01/2026", "ngay_ket_thuc": "09/01/2027", "y2025": {"tong_luong": 19493600, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 19493600}, "y2026": {"tong_luong": 106143868.9795918, "thuong_sn": 500000, "thuong_da": 7315000, "thuong_tet_tay": 2000000, "thuong_tet_ta": 6650000, "tong_cong": 122608868.9795918}, "ty_le": 0.15511965182996781, "bhxh": 17920000}, {"stt": 6, "ma_nv": "VONE05", "ho_ten": "Nguyễn Hiếu Hồng Ngọc", "nam_sinh": "11/05/1999", "ngay_vao": "02/02/2026", "ngay_ket_thuc": "01/02/2027", "y2025": {"tong_luong": 12015000, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 12015000}, "y2026": {"tong_luong": 110053255.1020408, "thuong_sn": 500000, "thuong_da": 8030000, "thuong_tet_tay": 1000000, "thuong_tet_ta": 6650000, "tong_cong": 126233255.1020408}, "ty_le": 0.1470197313564055, "bhxh": 15360000}, {"stt": 7, "ma_nv": "VONE06", "ho_ten": "Tạ Nguyễn Sơn Tùng", "nam_sinh": "13/07/1997", "ngay_vao": "10/02/2026", "ngay_ket_thuc": "10/02/2027", "y2025": {"tong_luong": 9015300, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 9015300}, "y2026": {"tong_luong": 135696900, "thuong_sn": 700000, "thuong_da": 10175000, "thuong_tet_tay": 1000000, "thuong_tet_ta": 9250000, "tong_cong": 156821900}, "ty_le": 0.1556778378872325, "bhxh": 19200000}, {"stt": 8, "ma_nv": "VONE07", "ho_ten": "Nguyễn Hoàng Như Mai", "nam_sinh": "28/12/2002", "ngay_vao": "19/05/2026", "ngay_ket_thuc": "19/05/2027", "y2025": {"tong_luong": 0, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 0}, "y2026": {"tong_luong": 46415585.106383, "thuong_sn": 500000, "thuong_da": 1000000, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 47915585.106383}, "ty_le": 0.0323167314720271, "bhxh": 4480000}, {"stt": 9, "ma_nv": "VONE08", "ho_ten": "Đỗ Quỳnh Như", "nam_sinh": "05/09/1993", "ngay_vao": "20/07/2026", "ngay_ket_thuc": "19/07/2027", "y2025": {"tong_luong": 0, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 0}, "y2026": {"tong_luong": 30366914.893617, "thuong_sn": 500000, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 30866914.893617}, "ty_le": 0.016465288019926513, "bhxh": 0}, {"stt": 10, "ma_nv": "VONE09", "ho_ten": "Nguyễn Nhựt Khương", "nam_sinh": "25/06/1995", "ngay_vao": "20/07/2026", "ngay_ket_thuc": "19/07/2027", "y2025": {"tong_luong": 0, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 0}, "y2026": {"tong_luong": 38482313.8297872, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 38482313.8297872}, "ty_le": 0, "bhxh": 0}, {"stt": 11, "ma_nv": "VONE10", "ho_ten": "Huỳnh Chí Hải", "nam_sinh": "07/07/1998", "ngay_vao": "26/05/2026", "ngay_ket_thuc": "25/05/2027", "y2025": {"tong_luong": 0, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 0}, "y2026": {"tong_luong": 74492380.3191489, "thuong_sn": 700000, "thuong_da": 1000000, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 76192380.3191489}, "ty_le": 0.02282112603620213, "bhxh": 6400000}, {"stt": 12, "ma_nv": "VONE11", "ho_ten": "Hồ Tâm Trí", "nam_sinh": "02/08/1998", "ngay_vao": "02/08/2026", "ngay_ket_thuc": "01/08/2027", "y2025": {"tong_luong": 0, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 0}, "y2026": {"tong_luong": 34601400, "thuong_sn": 700000, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 35301400}, "ty_le": 0.0202303953019242, "bhxh": 0}, {"stt": 13, "ma_nv": "VONE12", "ho_ten": "Thân Mạnh Tín", "nam_sinh": "14/03/1996", "ngay_vao": "01/07/2026", "ngay_ket_thuc": "", "y2025": {"tong_luong": 0, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 0}, "y2026": {"tong_luong": 17325000, "thuong_sn": 0, "thuong_da": 0, "thuong_tet_tay": 0, "thuong_tet_ta": 0, "tong_cong": 17325000}, "ty_le": 0, "bhxh": 0}], "total": {"y2025": {"tong_luong": 154014200, "tong_cong": 154014200}, "y2026": {"tong_luong": 1209457905.230569, "tong_cong": 1442887905.230569}, "bhxh": 169920000}};
+const OVERALL_XLSX = "01.V1_BaoCaoTaiChinhTongThe_CapNhat_260817.xlsx";
+
+
+// ============================================================
+// Formatters
+// ============================================================
+function fmtFull(n){
+  if (n === null || n === undefined) return '—';
+  const sign = n < 0 ? '-' : '';
+  return sign + Math.round(Math.abs(n)).toLocaleString('vi-VN') + ' đ';
+}
+function fmtShort(n){
+  if (n === null || n === undefined) return '—';
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return sign + (abs/1e9).toLocaleString('vi-VN', {maximumFractionDigits:2}) + ' tỷ';
+  if (abs >= 1e6) return sign + (abs/1e6).toLocaleString('vi-VN', {maximumFractionDigits:1}) + ' tr';
+  return sign + abs.toLocaleString('vi-VN');
+}
+function fmtPct(n){
+  if (n === null || n === undefined) return '—';
+  return (n*100).toLocaleString('vi-VN', {maximumFractionDigits:1}) + '%';
+}
+function niceCeil(v){
+  if (!v || v <= 0) return 1;
+  const exp = Math.floor(Math.log10(v));
+  const base = Math.pow(10, exp);
+  const f = v / base;
+  let nf;
+  if (f <= 1) nf = 1; else if (f <= 2) nf = 2; else if (f <= 5) nf = 5; else nf = 10;
+  return nf * base;
+}
+
+// ============================================================
+// Tooltip
+// ============================================================
+const tooltip = document.getElementById('tooltip');
+function showTip(evt, html){
+  tooltip.innerHTML = html;
+  tooltip.classList.add('show');
+  moveTip(evt);
+}
+function moveTip(evt){
+  const pad = 14;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTip(){ tooltip.classList.remove('show'); }
+
+function svgEl(tag, attrs){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function attachBarTooltip(el, label, value, extra){
+  el.addEventListener('mousemove', (e)=> showTip(e, `<b>${label}</b><br>${fmtFull(value)}${extra ? '<br>'+extra : ''}`));
+  el.addEventListener('mouseleave', hideTip);
+}
+
+// ============================================================
+// Donut builder (per-project panels, Folder 1)
+// ============================================================
+function buildDonut(slices, centerLabel, centerValueText, size, stroke){
+  size = size || 152; stroke = stroke || 20;
+  const r = (size - stroke)/2, cx = size/2, cy = size/2;
+  const circumference = 2 * Math.PI * r;
+  const total = slices.reduce((s,x)=>s+Math.max(x.value,0), 0);
+  const gapDeg = 3;
+  const gapLen = (gapDeg/360) * circumference;
+  let cum = 0;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'donut-wrap';
+  wrap.style.width = size + 'px';
+  wrap.style.height = size + 'px';
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('width', size);
+  svg.setAttribute('height', size);
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+
+  const track = document.createElementNS(svgNS, 'circle');
+  track.setAttribute('cx', cx); track.setAttribute('cy', cy); track.setAttribute('r', r);
+  track.setAttribute('fill', 'none');
+  track.setAttribute('stroke', 'var(--gridline)');
+  track.setAttribute('stroke-width', stroke);
+  svg.appendChild(track);
+
+  slices.forEach(s => {
+    const v = Math.max(s.value, 0);
+    if (v <= 0 || total <= 0) return;
+    const segLen = Math.max((v/total)*circumference - gapLen, 0);
+    const circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('class', 'seg');
+    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', r);
+    circle.setAttribute('fill', 'none');
+    circle.setAttribute('stroke', s.color);
+    circle.setAttribute('stroke-width', stroke);
+    circle.setAttribute('stroke-linecap', 'round');
+    circle.setAttribute('stroke-dasharray', `${segLen} ${circumference - segLen}`);
+    circle.setAttribute('stroke-dashoffset', -(cum) + circumference/4);
+    circle.style.transformOrigin = `${cx}px ${cy}px`;
+    const pct = (v/total*100);
+    circle.addEventListener('mousemove', (e)=>{
+      showTip(e, `<b>${s.label}</b><br>${fmtFull(s.value)}<br>${pct.toLocaleString('vi-VN',{maximumFractionDigits:1})}% doanh thu`);
+    });
+    circle.addEventListener('mouseleave', hideTip);
+    svg.appendChild(circle);
+    cum += segLen + gapLen;
+  });
+
+  wrap.appendChild(svg);
+  const center = document.createElement('div');
+  center.className = 'donut-center';
+  const valueFontSize = size >= 190 ? '20px' : (size <= 60 ? '9px' : '14px');
+  const labelDisplay = size <= 60 ? 'display:none' : '';
+  center.innerHTML = `<div class="dc-label" style="${labelDisplay}">${centerLabel}</div><div class="dc-value" style="font-size:${valueFontSize}">${centerValueText}</div>`;
+  wrap.appendChild(center);
+  return wrap;
+}
+
+function kpiRow(label, value, colorVar, sub){
+  const row = document.createElement('div');
+  row.className = 'kpi-row' + (sub ? ' sub' : '');
+  const dot = colorVar ? `<span class="legend-dot" style="background:${colorVar}"></span>` : '';
+  row.innerHTML = `<span class="kn">${dot}${label}</span><span class="kv" title="${fmtFull(value)}">${fmtShort(value)} đ</span>`;
+  return row;
+}
+
+// ============================================================
+// Reserve (chi phí dự phòng) meter — used per-project and portfolio-wide
+// ============================================================
+function buildReserveBox(duphong, titlePrefix){
+  const plan = duphong.plan || 0, actual = duphong.actual || 0;
+  const remaining = plan - actual;
+  const over = remaining < 0;
+  const pct = plan > 0 ? Math.min(actual/plan*100, 100) : (actual > 0 ? 100 : 0);
+  const box = document.createElement('div');
+  box.className = 'reserve-box';
+  box.innerHTML = `
+    <div class="reserve-head">
+      <span class="rh-label">🛟 ${titlePrefix}Chi phí dự phòng</span>
+      <span title="Đã chi / Kế hoạch">${fmtShort(actual)} / ${fmtShort(plan)} đ</span>
+    </div>
+    <div class="reserve-track"><div class="reserve-fill ${over ? 'over' : ''}" style="width:${pct}%"></div></div>
+    <div class="reserve-foot">
+      <span>Đã chi ${(plan>0 ? (actual/plan*100) : 0).toLocaleString('vi-VN',{maximumFractionDigits:1})}% kế hoạch</span>
+      <span class="${over ? 'over-label' : 'rem-label'}">${over ? 'Vượt kế hoạch ' + fmtShort(Math.abs(remaining)) : 'Còn lại ' + fmtShort(remaining)} đ</span>
+    </div>
+  `;
+  return box;
+}
+
+// ============================================================
+// Project detail panel (donut + kpi list)
+// ============================================================
+function buildPanel(title, d, basisKey, size){
+  size = size || 152;
+  const panel = document.createElement('div');
+  panel.className = 'panel' + (size > 152 ? ' panel-lg' : '');
+
+  const doanhthu = d.doanhthu[basisKey];
+  const chiphi = d.chiphi[basisKey];
+  const lnttt = d.lnttt[basisKey];
+  const thuong = d.thuong[basisKey];
+  const lnst = d.lnst[basisKey];
+  const tysuat = d.tysuat[basisKey];
+  const duphong = d.duphong ? (d.duphong[basisKey] || 0) : 0;
+  const chiphiKhac = Math.max(chiphi - duphong, 0);
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'panel-title';
+  titleEl.textContent = title;
+  panel.appendChild(titleEl);
+
+  if (lnttt < 0 || doanhthu <= 0) {
+    panel.classList.add('critical');
+    const head = document.createElement('div');
+    head.className = 'critical-head';
+    const basisLabel = basisKey === 'plan' ? 'kế hoạch' : 'thực tế';
+    head.innerHTML = `⚠ Dự án đang LỖ (${basisLabel})`;
+    panel.appendChild(head);
+
+    const ratio = doanhthu > 0 ? Math.min(chiphi/doanhthu, 1) : 1;
+    const meter = document.createElement('div');
+    meter.className = 'meter';
+    meter.innerHTML = `<div class="meter-fill" style="width:${(ratio*100).toFixed(1)}%"></div>`;
+    panel.appendChild(meter);
+    const meterLabels = document.createElement('div');
+    meterLabels.className = 'meter-labels';
+    meterLabels.innerHTML = `<span>Chi phí ${fmtShort(chiphi)} đ</span><span>Doanh thu ${fmtShort(doanhthu)} đ</span>`;
+    panel.appendChild(meterLabels);
+
+    const kpi = document.createElement('div');
+    kpi.className = 'kpi-list';
+    kpi.appendChild(kpiRow('Doanh thu', doanhthu, null));
+    kpi.appendChild(kpiRow('Chi phí', chiphi, 'var(--series-1)'));
+    if (duphong > 0) kpi.appendChild(kpiRow('Trong đó: dự phòng', duphong, 'var(--series-1-tint)', true));
+    kpi.appendChild(kpiRow('LN trước thưởng', lnttt, null));
+    kpi.appendChild(kpiRow('Thưởng', thuong, 'var(--series-2)', true));
+    kpi.appendChild(kpiRow('LN sau thưởng', lnst, 'var(--series-3)', true));
+    panel.appendChild(kpi);
+
+    const badge = document.createElement('div');
+    badge.className = 'rate-badge';
+    badge.style.background = 'var(--status-critical)';
+    badge.style.color = '#fff';
+    badge.textContent = 'Tỷ suất LN ' + fmtPct(tysuat);
+    panel.appendChild(badge);
+    return panel;
+  }
+
+  const slices = duphong > 0
+    ? [
+        { label: 'Chi phí (không gồm dự phòng)', value: chiphiKhac, color: 'var(--series-1)' },
+        { label: 'Chi phí dự phòng', value: duphong, color: 'var(--series-1-tint)' },
+        { label: 'Thưởng', value: thuong, color: 'var(--series-2)' },
+        { label: 'Lợi nhuận sau thưởng', value: lnst, color: 'var(--series-3)' },
+      ]
+    : [
+        { label: 'Chi phí', value: chiphi, color: 'var(--series-1)' },
+        { label: 'Thưởng', value: thuong, color: 'var(--series-2)' },
+        { label: 'Lợi nhuận sau thưởng', value: lnst, color: 'var(--series-3)' },
+      ];
+  const donut = buildDonut(slices, 'Doanh thu', fmtShort(doanhthu), size, size > 152 ? 26 : 20);
+  panel.appendChild(donut);
+
+  const kpi = document.createElement('div');
+  kpi.className = 'kpi-list';
+  kpi.appendChild(kpiRow('Chi phí', chiphi, 'var(--series-1)'));
+  if (duphong > 0) kpi.appendChild(kpiRow('Trong đó: dự phòng', duphong, 'var(--series-1-tint)', true));
+  kpi.appendChild(kpiRow('LN trước thưởng', lnttt, null));
+  kpi.appendChild(kpiRow('Thưởng', thuong, 'var(--series-2)', true));
+  kpi.appendChild(kpiRow('LN sau thưởng', lnst, 'var(--series-3)', true));
+  panel.appendChild(kpi);
+
+  const badge = document.createElement('div');
+  badge.className = 'rate-badge';
+  badge.textContent = 'Tỷ suất LN ' + fmtPct(tysuat);
+  panel.appendChild(badge);
+
+  return panel;
+}
+
+function buildAggregate(projects){
+  const agg = { key: '__ALL__', name: 'Tất cả dự án', date: projects[0] ? projects[0].date : '' };
+  ['doanhthu','chiphi','lnttt','thuong','lnst','duphong'].forEach(metric => {
+    agg[metric] = {
+      plan: projects.reduce((s,p) => s + p[metric].plan, 0),
+      actual: projects.reduce((s,p) => s + p[metric].actual, 0),
+    };
+  });
+  agg.tysuat = {
+    plan: agg.doanhthu.plan ? agg.lnst.plan / agg.doanhthu.plan : 0,
+    actual: agg.doanhthu.actual ? agg.lnst.actual / agg.doanhthu.actual : 0,
+  };
+  return agg;
+}
+
+document.getElementById('portfolioCount').textContent = PROJECTS.length;
+const AGGREGATE = buildAggregate(PROJECTS);
+const portfolioPanels = document.getElementById('portfolioPanels');
+portfolioPanels.appendChild(buildPanel('Kế hoạch — toàn danh mục', AGGREGATE, 'plan', 200));
+portfolioPanels.appendChild(buildPanel('Thực tế — toàn danh mục', AGGREGATE, 'actual', 200));
+document.getElementById('portfolioReserve').replaceWith((() => {
+  const box = buildReserveBox({plan: AGGREGATE.duphong.plan, actual: AGGREGATE.duphong.actual}, 'Toàn danh mục — ');
+  box.id = 'portfolioReserve';
+  return box;
+})());
+
+// ============================================================
+// Master-detail: project list + enlarged detail panel
+// ============================================================
+function buildThumb(d){
+  const thumb = document.createElement('div');
+  thumb.appendChild(buildDonut([
+    { label: 'Chi phí', value: d.chiphi.plan, color: 'var(--series-1)' },
+    { label: 'Thưởng', value: d.thuong.plan, color: 'var(--series-2)' },
+    { label: 'Lợi nhuận sau thưởng', value: d.lnst.plan, color: 'var(--series-3)' },
+  ], '', '', 40, 8));
+  return thumb.firstChild;
+}
+
+const CONTRACT_DATE_PREFIX = 'projDash_contractDate_';
+function getContractDateOverride(key){
+  try { return localStorage.getItem(CONTRACT_DATE_PREFIX + key) || ''; } catch(e){ return ''; }
+}
+function setContractDate(key, val){
+  try { localStorage.setItem(CONTRACT_DATE_PREFIX + key, val); } catch(e){}
+}
+
+let selectedKey = PROJECTS.length ? PROJECTS[0].key : null;
+
+function renderProjectList(){
+  const list = document.getElementById('projectList');
+  list.innerHTML = '';
+  PROJECTS.forEach(d => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'project-item' + (d.key === selectedKey ? ' active' : '');
+    const thumbWrap = document.createElement('div');
+    thumbWrap.className = 'thumb';
+    thumbWrap.appendChild(buildThumb(d));
+    item.appendChild(thumbWrap);
+    const info = document.createElement('div');
+    info.className = 'pi-info';
+    info.innerHTML = `<div class="pi-name">${d.name}</div><div class="pi-sub">DT KH ${fmtShort(d.doanhthu.plan)} đ · TS LN ${fmtPct(d.tysuat.plan)}</div>`;
+    item.appendChild(info);
+    item.addEventListener('click', () => { selectedKey = d.key; renderProjectList(); renderProjectDetail(); });
+    list.appendChild(item);
+  });
+}
+
+function renderProjectDetail(){
+  const detail = document.getElementById('projectDetail');
+  detail.innerHTML = '';
+  const d = PROJECTS.find(p => p.key === selectedKey);
+  if (!d) return;
+
+  const head = document.createElement('div');
+  head.className = 'detail-head';
+  head.innerHTML = `<h2>${d.name}</h2><p class="card-sub">Cập nhật ${d.date}</p>`;
+  detail.appendChild(head);
+
+  const linksRow = document.createElement('div');
+  linksRow.className = 'excel-links-row';
+  linksRow.innerHTML = `<a class="excel-link" href="./data/${d.xlsx}" target="_blank" rel="noopener"><span class="el-icon">📗</span> Xem / tải file Excel gốc dự án này</a>`;
+  detail.appendChild(linksRow);
+
+  const fields = document.createElement('div');
+  fields.className = 'detail-fields';
+
+  const contractDefault = (d.contract && d.contract.date) ? d.contract.date : '';
+  const contractVal = getContractDateOverride(d.key) || contractDefault;
+  const confirmed = d.contract ? d.contract.confirmed : false;
+  const dateBox = document.createElement('div');
+  dateBox.className = 'field-box contract-box';
+  dateBox.innerHTML = `
+    <div class="field-label">Thời gian ký hợp đồng
+      <span class="confirm-pill ${confirmed ? 'yes' : 'no'}">${confirmed ? 'Đã xác nhận' : 'Ước tính'}</span>
+    </div>
+    <input type="text" placeholder="Chưa cập nhật — bấm để nhập, VD: 15/03/2026" value="${contractVal}">
+    <div class="field-hint">✎ Sửa tại đây chỉ lưu trên trình duyệt này (không đồng bộ cho người xem khác)</div>
+    ${d.contract ? `<div class="cb-note ${confirmed ? '' : 'unconfirmed'}">${confirmed ? 'ℹ️' : '⚠️'} ${d.contract.source}</div>` : ''}
+  `;
+  const dateInput = dateBox.querySelector('input');
+  dateInput.addEventListener('change', () => setContractDate(d.key, dateInput.value));
+  fields.appendChild(dateBox);
+
+  const progressPct = d.doanhthu.plan ? (d.doanhthu.actual / d.doanhthu.plan * 100) : 0;
+  const progBox = document.createElement('div');
+  progBox.className = 'field-box';
+  progBox.innerHTML = `
+    <div class="field-label">Tiến độ thực hiện</div>
+    <div class="progress-pct">${progressPct.toLocaleString('vi-VN',{maximumFractionDigits:1})}%</div>
+    <div class="progress-track"><div class="progress-fill" style="width:${Math.min(progressPct,100).toFixed(1)}%"></div></div>
+    <div class="field-hint">Ước tính theo Doanh thu thực tế / Doanh thu kế hoạch (gắn với các mốc thanh toán theo tiến độ dự án)</div>
+  `;
+  fields.appendChild(progBox);
+
+  detail.appendChild(fields);
+
+  detail.appendChild(buildReserveBox(d.duphong, ''));
+
+  const panels = document.createElement('div');
+  panels.className = 'panels-lg';
+  panels.style.marginTop = '16px';
+  panels.appendChild(buildPanel('Kế hoạch (theo HĐ)', d, 'plan', 220));
+  panels.appendChild(buildPanel('Thực tế (đến hiện tại)', d, 'actual', 220));
+  detail.appendChild(panels);
+}
+
+renderProjectList();
+renderProjectDetail();
+
+// ============================================================
+// Data table (Folder 1 overview)
+// ============================================================
+const tbody = document.getElementById('tableBody');
+PROJECTS.forEach(d => {
+  const hdr = document.createElement('tr');
+  hdr.className = 'group-hdr';
+  hdr.innerHTML = `<td colspan="7">${d.name} — cập nhật ${d.date}</td>`;
+  tbody.appendChild(hdr);
+  ['plan','actual'].forEach(basis => {
+    const tr = document.createElement('tr');
+    const vals = [d.doanhthu[basis], d.chiphi[basis], d.lnttt[basis], d.thuong[basis], d.lnst[basis]];
+    let html = `<td style="padding-left:24px">${basis==='plan' ? 'Kế hoạch (theo HĐ)' : 'Thực tế (đến hiện tại)'}</td>`;
+    vals.forEach(v => { html += `<td class="${v<0?'neg':''}">${fmtFull(v)}</td>`; });
+    html += `<td class="${d.tysuat[basis]<0?'neg':''}">${fmtPct(d.tysuat[basis])}</td>`;
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+});
+
+// ============================================================
+// Folder 1 sub-tab switching (Tổng quan / Chi tiết đầy đủ)
+// ============================================================
+const tabBtnOverview = document.getElementById('tabBtnOverview');
+const tabBtnFull = document.getElementById('tabBtnFull');
+const tabOverview = document.getElementById('tabOverview');
+const tabFull = document.getElementById('tabFull');
+tabBtnOverview.addEventListener('click', () => {
+  tabBtnOverview.classList.add('active'); tabBtnFull.classList.remove('active');
+  tabOverview.classList.add('active'); tabFull.classList.remove('active');
+});
+tabBtnFull.addEventListener('click', () => {
+  tabBtnFull.classList.add('active'); tabBtnOverview.classList.remove('active');
+  tabFull.classList.add('active'); tabOverview.classList.remove('active');
+});
+
+// ============================================================
+// Folder 1, tab 2: full Excel-replica table per project
+// ============================================================
+function fmtCell(v, kind){
+  if (v === null || v === undefined || v === '') return '';
+  if (v === '-') return '-';
+  if (typeof v === 'string') return v;
+  if (kind === 'pct') return (v*100).toLocaleString('vi-VN', {maximumFractionDigits:2}) + '%';
+  if (kind === 'num') return Math.round(v).toLocaleString('vi-VN');
+  return String(v);
+}
+function rowLevel(code){
+  if (code === null || code === undefined || code === '') return 'detail';
+  if (typeof code === 'number') return 'item';
+  const s = String(code).trim();
+  if (/^[A-G]$/.test(s)) return 'top';
+  if (/^[A-G]\d/.test(s)) return 'sub';
+  return 'item';
+}
+let selectedFullKey = PROJECTS.length ? PROJECTS[0].key : null;
+
+function renderFullPills(){
+  const wrap = document.getElementById('fullProjectPills');
+  wrap.innerHTML = '';
+  PROJECTS.forEach(d => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pill' + (d.key === selectedFullKey ? ' active' : '');
+    btn.textContent = d.name;
+    btn.addEventListener('click', () => { selectedFullKey = d.key; renderFullPills(); renderFullTable(); });
+    wrap.appendChild(btn);
+  });
+}
+
+function renderFullTable(){
+  const d = PROJECTS.find(p => p.key === selectedFullKey);
+  document.getElementById('fullTableCaption').textContent = d ? `${d.name} — bảng TÀI CHÍNH đầy đủ (đơn vị: VNĐ) — cập nhật ${d.date}` : '';
+  const body = document.getElementById('fullTableBody');
+  body.innerHTML = '';
+  if (!d) return;
+  d.fullTable.forEach(row => {
+    const [code, label, pct, tamung, giatriHD, hoantra, vat, giatriDK, thucte, ghichu] = row;
+    const lvl = rowLevel(code);
+    const tr = document.createElement('tr');
+    tr.className = 'lvl-' + lvl;
+    tr.innerHTML = `
+      <td>${code === null || code === undefined ? '' : code}</td>
+      <td>${label || ''}</td>
+      <td>${fmtCell(pct, 'pct')}</td>
+      <td>${fmtCell(tamung, 'num')}</td>
+      <td>${fmtCell(giatriHD, 'num')}</td>
+      <td>${fmtCell(hoantra, 'num')}</td>
+      <td>${fmtCell(vat, 'pct')}</td>
+      <td>${fmtCell(giatriDK, 'num')}</td>
+      <td>${fmtCell(thucte, 'num')}</td>
+      <td>${ghichu || ''}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+renderFullPills();
+renderFullTable();
+
+// ============================================================
+// Folder-level top navigation (1 / 2 / 3)
+// ============================================================
+const folderBtns = Array.from(document.querySelectorAll('.folder-btn'));
+const folderPanels = Array.from(document.querySelectorAll('.folder-panel'));
+folderBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    folderBtns.forEach(b => b.classList.remove('active'));
+    folderPanels.forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.folder).classList.add('active');
+  });
+});
+
+// ---- Generic 2-way sub-tab wiring (used by Folder 2 & Folder 3) ----
+function wireSubTabs(btnAId, panelAId, btnBId, panelBId){
+  const bA = document.getElementById(btnAId), pA = document.getElementById(panelAId);
+  const bB = document.getElementById(btnBId), pB = document.getElementById(panelBId);
+  bA.addEventListener('click', () => {
+    bA.classList.add('active'); bB.classList.remove('active');
+    pA.classList.add('active'); pB.classList.remove('active');
+  });
+  bB.addEventListener('click', () => {
+    bB.classList.add('active'); bA.classList.remove('active');
+    pB.classList.add('active'); pA.classList.remove('active');
+  });
+}
+wireSubTabs('f2TabBtnChart', 'f2TabChart', 'f2TabBtnFull', 'f2TabFull');
+wireSubTabs('f3TabBtnChart', 'f3TabChart', 'f3TabBtnFull', 'f3TabFull');
+wireSubTabs('f4TabBtnChart', 'f4TabChart', 'f4TabBtnFull', 'f4TabFull');
+
+// ============================================================
+// Folder 2: Báo cáo thu chi 2025–2026 (summary, không chia tháng)
+// ============================================================
+function renderF2Kpis(){
+  const wrap = document.getElementById('f2KpiTiles');
+  wrap.innerHTML = '';
+  const tiles = [
+    { label: 'Tổng thu', value: SUMMARY.thu.actual, plan: SUMMARY.thu.plan, color: 'var(--series-4)' },
+    { label: 'Tổng chi', value: SUMMARY.chi.actual, plan: SUMMARY.chi.plan, color: 'var(--series-1)' },
+    { label: 'Lợi nhuận sau thưởng', value: SUMMARY.loinhuan.actual, plan: SUMMARY.loinhuan.plan, color: SUMMARY.loinhuan.actual >= 0 ? 'var(--series-3)' : 'var(--status-critical)' },
+  ];
+  tiles.forEach(t => {
+    const pct = t.plan ? Math.min(Math.abs(t.value/t.plan)*100, 100) : 0;
+    const div = document.createElement('div');
+    div.className = 'kpi-tile';
+    div.innerHTML = `
+      <div class="kt-label"><span class="legend-dot" style="background:${t.color}"></span>${t.label} — Thực tế</div>
+      <div class="kt-value">${fmtFull(t.value)}</div>
+      <div class="kt-sub">Dự kiến: ${fmtFull(t.plan)} · đạt ${pct.toLocaleString('vi-VN',{maximumFractionDigits:1})}%</div>
+      <div class="kt-bar"><div class="kt-bar-fill" style="width:${pct}%;background:${t.color}"></div></div>
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+// Folder 2 now reuses the same donut+kpi panel as Folder 1: Thu = Chi + Thưởng + LN sau thưởng
+// is a valid part-to-whole relationship, so we build a synthetic "project-shaped" object
+// from SUMMARY and feed it straight into buildPanel().
+const SUMMARY_PROJECT = {
+  doanhthu: SUMMARY.thu,
+  chiphi: SUMMARY.chi,
+  lnttt: SUMMARY.chenhlech,
+  thuong: SUMMARY.thuong,
+  lnst: SUMMARY.loinhuan,
+  tysuat: SUMMARY.tysuat_loinhuan,
+};
+
+function renderF2Table(){
+  const rows = [
+    ['Tổng thu', SUMMARY.thu.actual, SUMMARY.thu.plan, 'money'],
+    ['Tổng chi', SUMMARY.chi.actual, SUMMARY.chi.plan, 'money'],
+    ['Chênh lệch thu chi', SUMMARY.chenhlech.actual, SUMMARY.chenhlech.plan, 'money'],
+    ['Tỷ suất chênh lệch', SUMMARY.tysuat_chenhlech.actual, SUMMARY.tysuat_chenhlech.plan, 'pct'],
+    ['Thưởng (dự án + công ty)', SUMMARY.thuong.actual, SUMMARY.thuong.plan, 'money'],
+    ['Thuế TNDN', SUMMARY.thue.actual, SUMMARY.thue.plan, 'money'],
+    ['Lợi nhuận', SUMMARY.loinhuan.actual, SUMMARY.loinhuan.plan, 'money'],
+    ['Tỷ suất lợi nhuận', SUMMARY.tysuat_loinhuan.actual, SUMMARY.tysuat_loinhuan.plan, 'pct'],
+  ];
+  const tbody = document.getElementById('f2TableBody');
+  tbody.innerHTML = '';
+  rows.forEach(([label, actual, plan, kind]) => {
+    const tr = document.createElement('tr');
+    const fmt = kind === 'pct' ? fmtPct : fmtFull;
+    tr.innerHTML = `<td>${label}</td><td class="${actual<0?'neg':''}">${fmt(actual)}</td><td class="${plan<0?'neg':''}">${fmt(plan)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+renderF2Kpis();
+const f2Panels = document.getElementById('f2Panels');
+f2Panels.appendChild(buildPanel('Kế hoạch', SUMMARY_PROJECT, 'plan', 200));
+f2Panels.appendChild(buildPanel('Thực tế', SUMMARY_PROJECT, 'actual', 200));
+renderF2Table();
+
+// ---- Folder 2, tab "Chi tiết đầy đủ (Excel)": replica of sheet BC_ThuChi_2026 ----
+function f2ThuRowLevel(code){
+  if (typeof code === 'string') return 'subtotal';
+  if (typeof code === 'number' && Number.isInteger(code)) return 'top';
+  return 'item';
+}
+function renderF2ThuTable(){
+  const body = document.getElementById('f2ThuTableBody');
+  body.innerHTML = '';
+  F2_TABLES.thu.forEach(row => {
+    let [code, label, hd1, hd2, tyle, tamung, tylht, thuTT, tylhtDK, thuDK] = row;
+    const lvl = f2ThuRowLevel(code);
+    let dispCode = code, dispLabel = label;
+    if (lvl === 'subtotal'){ dispLabel = code; dispCode = ''; }
+    const tr = document.createElement('tr');
+    tr.className = 'lvl-' + lvl;
+    tr.innerHTML = `
+      <td>${dispCode === null || dispCode === undefined ? '' : dispCode}</td>
+      <td>${dispLabel || ''}</td>
+      <td>${fmtCell(hd1,'num')}</td>
+      <td>${fmtCell(hd2,'num')}</td>
+      <td>${fmtCell(tyle,'pct')}</td>
+      <td>${fmtCell(tamung,'num')}</td>
+      <td>${fmtCell(tylht,'pct')}</td>
+      <td>${fmtCell(thuTT,'num')}</td>
+      <td>${fmtCell(tylhtDK,'pct')}</td>
+      <td>${fmtCell(thuDK,'num')}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderF2ChiTable(){
+  const body = document.getElementById('f2ChiTableBody');
+  body.innerHTML = '';
+  F2_TABLES.chi.forEach(row => {
+    const [code, label, daTH, duKien, phatSinh, ghiChu] = row;
+    const lvl = (code === null || code === undefined) ? 'detail' : 'top';
+    const tr = document.createElement('tr');
+    tr.className = 'lvl-' + lvl;
+    tr.innerHTML = `
+      <td>${code === null || code === undefined ? '' : code}</td>
+      <td>${label || ''}</td>
+      <td>${fmtCell(daTH,'num')}</td>
+      <td>${fmtCell(duKien,'num')}</td>
+      <td>${fmtCell(phatSinh,'num')}</td>
+      <td style="white-space:normal">${ghiChu || ''}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderF2ThuongTable(){
+  const body = document.getElementById('f2ThuongTableBody');
+  body.innerHTML = '';
+  F2_TABLES.thuongDuAn.forEach(row => {
+    const [name, daTH, duKien] = row;
+    const isTotal = name === 'TỔNG CỘNG';
+    const tr = document.createElement('tr');
+    tr.className = isTotal ? 'lvl-top' : 'lvl-item';
+    tr.innerHTML = `<td colspan="2">${name}</td><td>${fmtCell(daTH,'num')}</td><td>${fmtCell(duKien,'num')}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+renderF2ThuTable();
+renderF2ChiTable();
+renderF2ThuongTable();
+
+// ============================================================
+// Folder 3: Dòng tiền tài chính theo tháng 2025–2026
+// ============================================================
+function renderF3Legend(){
+  const wrap = document.getElementById('f3Legend');
+  wrap.innerHTML = `
+    <div class="lg-item"><span class="lg-swatch" style="background:var(--series-4)"></span>Thu</div>
+    <div class="lg-item"><span class="lg-swatch" style="background:var(--series-1)"></span>Chi</div>
+    <div class="lg-item"><span style="display:inline-block;width:16px;border-top:2.5px solid var(--text-secondary)"></span>Nét liền = Thực tế</div>
+    <div class="lg-item"><span style="display:inline-block;width:16px;border-top:2.5px dashed var(--text-secondary)"></span>Nét đứt = Dự kiến</div>
+    <div class="lg-item"><span class="diff-badge pos" style="padding:2px 8px">+X</span>Thu &gt; Chi (lãi tháng)</div>
+    <div class="lg-item"><span class="diff-badge neg" style="padding:2px 8px">-X</span>Thu &lt; Chi (lỗ tháng)</div>
+  `;
+}
+
+// Line + area trend chart for Folder 3 — replaces the old grouped bar chart.
+// A pie/donut is the wrong form for a 16-month time series (part-to-whole only
+// makes sense at a single point in time), so per the user's ask for something
+// clearer/more attractive than bars, this uses two trend lines (Thu / Chi) that
+// switch from solid (Thực tế) to dashed (Dự kiến) at the boundary month, with the
+// gap between the lines filled green when Thu ≥ Chi and red when Thu < Chi —
+// so the monthly thu-chi difference stays directly visible without a third axis.
+function buildTrendChart(months){
+  const leftPad = 60, rightPad = 24, topPad = 40, bottomPad = 40;
+  const chartH = 240, colW = 58;
+  const w = leftPad + rightPad + colW*(months.length-1);
+  const h = topPad + chartH + bottomPad;
+
+  const pts = months.map((mo,i) => {
+    const hasActual = mo.thu.actual !== 0 || mo.chi.actual !== 0;
+    return {
+      i, label: mo.label, hasActual,
+      thu: hasActual ? mo.thu.actual : mo.thu.plan,
+      chi: hasActual ? mo.chi.actual : mo.chi.plan,
+      mo,
+    };
+  });
+  let boundary = -1;
+  pts.forEach(p => { if (p.hasActual) boundary = p.i; });
+
+  const maxVal = Math.max(1, ...pts.flatMap(p => [p.thu, p.chi]).map(Math.abs));
+  const niceMax = niceCeil(maxVal);
+  const x = i => leftPad + colW*i;
+  const y = v => topPad + chartH - chartH*(v/niceMax);
+
+  const svg = svgEl('svg', {width:w, height:h, viewBox:`0 0 ${w} ${h}`, style:'overflow:visible; min-width:100%'});
+
+  const steps = 4;
+  for (let s=0; s<=steps; s++){
+    const frac = s/steps;
+    const gy = topPad + chartH*(1-frac);
+    svg.appendChild(svgEl('line', {x1:leftPad, x2:w-rightPad, y1:gy, y2:gy, class:'bc-gridline'}));
+    const t = svgEl('text', {x:leftPad-8, y:gy+3, class:'bc-axis-label', 'text-anchor':'end'});
+    t.textContent = fmtShort(niceMax*frac);
+    svg.appendChild(t);
+  }
+
+  // "hiện tại" boundary marker between thực tế and dự kiến
+  if (boundary >= 0 && boundary < months.length-1){
+    const bx = (x(boundary) + x(boundary+1)) / 2;
+    svg.appendChild(svgEl('line', {x1:bx, x2:bx, y1:topPad-14, y2:topPad+chartH, stroke:'var(--baseline)', 'stroke-width':1, 'stroke-dasharray':'2,3'}));
+    const bl = svgEl('text', {x:bx, y:topPad-20, 'text-anchor':'middle', style:'font-size:9.5px;fill:var(--text-muted);font-weight:700'});
+    bl.textContent = 'Hiện tại';
+    svg.appendChild(bl);
+  }
+
+  // diverging area fill between Thu and Chi, split at sign-change crossings
+  const GREEN = '#0f7a45', RED = 'var(--status-critical)';
+  for (let i=0; i<pts.length-1; i++){
+    const p0 = pts[i], p1 = pts[i+1];
+    const d0 = p0.thu - p0.chi, d1 = p1.thu - p1.chi;
+    const x0 = x(i), x1 = x(i+1);
+    const yThu0 = y(p0.thu), yChi0 = y(p0.chi), yThu1 = y(p1.thu), yChi1 = y(p1.chi);
+    if ((d0 >= 0) === (d1 >= 0) || d0 === 0 || d1 === 0){
+      const color = (d0 + d1) >= 0 ? GREEN : RED;
+      const poly = svgEl('polygon', {
+        points: `${x0},${yThu0} ${x1},${yThu1} ${x1},${yChi1} ${x0},${yChi0}`,
+        fill: color, 'fill-opacity': 0.15, stroke: 'none',
+      });
+      svg.appendChild(poly);
+    } else {
+      const t = d0/(d0-d1);
+      const xc = x0 + (x1-x0)*t;
+      const yc = ((yThu0 + (yThu1-yThu0)*t) + (yChi0 + (yChi1-yChi0)*t)) / 2;
+      svg.appendChild(svgEl('polygon', {points:`${x0},${yThu0} ${xc},${yc} ${x0},${yChi0}`, fill: d0>=0?GREEN:RED, 'fill-opacity':0.15, stroke:'none'}));
+      svg.appendChild(svgEl('polygon', {points:`${xc},${yc} ${x1},${yThu1} ${x1},${yChi1}`, fill: d1>=0?GREEN:RED, 'fill-opacity':0.15, stroke:'none'}));
+    }
+  }
+
+  // Thu / Chi lines — solid up to boundary, dashed after
+  [
+    {key:'thu', color:'var(--series-4)', name:'Thu'},
+    {key:'chi', color:'var(--series-1)', name:'Chi'},
+  ].forEach(series => {
+    for (let i=0; i<pts.length-1; i++){
+      const solid = (i+1) <= boundary;
+      const attrs = {
+        x1:x(i), y1:y(pts[i][series.key]), x2:x(i+1), y2:y(pts[i+1][series.key]),
+        stroke: series.color, 'stroke-width':2.5, 'stroke-linecap':'round',
+      };
+      if (!solid) attrs['stroke-dasharray'] = '6,4';
+      svg.appendChild(svgEl('line', attrs));
+    }
+    pts.forEach(p => {
+      const isForecastPoint = p.i > boundary;
+      const cx = x(p.i), cy = y(p[series.key]);
+      const dot = svgEl('circle', {
+        cx, cy, r: 4.5, fill: isForecastPoint ? 'var(--surface-1)' : series.color,
+        stroke: series.color, 'stroke-width':2, style:'cursor:pointer',
+      });
+      svg.appendChild(dot);
+      const mo = p.mo;
+      const tagSuffix = p.hasActual ? ' · thực tế' : ' · dự kiến (chưa có số liệu thực tế)';
+      dot.addEventListener('mousemove', (e) => showTip(e, `<b>${p.label} — ${series.name}</b><br>${fmtFull(p[series.key])}${tagSuffix}<br><span style="opacity:.75">Kế hoạch: ${fmtFull(series.key==='thu'?mo.thu.plan:mo.chi.plan)} · Thực tế: ${fmtFull(series.key==='thu'?mo.thu.actual:mo.chi.actual)}</span>`));
+      dot.addEventListener('mouseleave', hideTip);
+    });
+  });
+
+  // month labels + per-month thu-chi diff badge
+  pts.forEach(p => {
+    const mlabel = svgEl('text', {x:x(p.i), y:h-16, class:'bc-month-label', 'text-anchor':'middle'});
+    mlabel.textContent = p.label;
+    svg.appendChild(mlabel);
+
+    const val = p.hasActual ? p.mo.loinhuan.actual : p.mo.loinhuan.plan;
+    const topY = Math.min(y(p.thu), y(p.chi)) - 12;
+    const badgeColor = val >= 0 ? GREEN : RED;
+    const badge = svgEl('text', {x:x(p.i), y:topY, 'text-anchor':'middle', style:`font-size:9.5px;font-weight:700;fill:${badgeColor};cursor:pointer`});
+    badge.textContent = (val >= 0 ? '+' : '') + fmtShort(val);
+    svg.appendChild(badge);
+    badge.addEventListener('mousemove', (e) => showTip(e, `<b>${p.label} — Chênh lệch Thu − Chi</b><br>${fmtFull(val)}${p.hasActual ? ' · thực tế' : ' · dự kiến (tháng chưa có số liệu thực tế)'}`));
+    badge.addEventListener('mouseleave', hideTip);
+  });
+
+  return svg;
+}
+
+renderF3Legend();
+document.getElementById('f3Chart').appendChild(buildTrendChart(MONTHLY));
+
+// ---- Folder 3, tab "Chi tiết đầy đủ (Excel)": replica of sheet BC_DongTien_2026 ----
+function f3RowLevel(code){
+  if (code === null || code === undefined) return 'detail';
+  if (typeof code === 'string') return 'top';
+  if (Number.isInteger(code)) return 'top';
+  return 'item';
+}
+function buildF3Table(){
+  const table = document.createElement('table');
+  table.className = 'full-table';
+  const thead = document.createElement('thead');
+  const trMonths = document.createElement('tr');
+  trMonths.innerHTML = '<th rowspan="2">Mã</th><th rowspan="2">Tên công việc / hạng mục</th>' +
+    F3_TABLE.months.map(m => `<th colspan="2">${m}</th>`).join('');
+  thead.appendChild(trMonths);
+  const trSub = document.createElement('tr');
+  trSub.innerHTML = F3_TABLE.months.map(() => '<th>Dự kiến</th><th>Thực tế</th>').join('');
+  thead.appendChild(trSub);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  F3_TABLE.sections.forEach(sec => {
+    const bannerTr = document.createElement('tr');
+    bannerTr.className = 'group-hdr';
+    bannerTr.innerHTML = `<td colspan="${2 + F3_TABLE.months.length*2}">${sec.label}</td>`;
+    tbody.appendChild(bannerTr);
+    sec.rows.forEach(row => {
+      const code = row[0], label = row[1];
+      const lvl = f3RowLevel(code);
+      const tr = document.createElement('tr');
+      tr.className = 'lvl-' + lvl;
+      let html = `<td>${code === null || code === undefined ? '' : code}</td><td>${label || ''}</td>`;
+      for (let i = 2; i < row.length; i++){
+        html += `<td>${fmtCell(row[i], 'num')}</td>`;
+      }
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
+    });
+  });
+  table.appendChild(tbody);
+  return table;
+}
+document.getElementById('f3TableWrap').appendChild(buildF3Table());
+
+// ============================================================
+// Folder 4: Nhân lực dự án — % thời gian tham gia theo giai đoạn
+// ============================================================
+const STAFF_PHASES = [
+  {key: 'tkcs', label: 'TKCS'},
+  {key: 'tkkt', label: 'TKKT'},
+  {key: 'tktc', label: 'TKTC'},
+  {key: 'gstg', label: 'GSTG'},
+];
+
+function buildStaffCard(project){
+  const card = document.createElement('div');
+  card.className = 'staff-card';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = '📁 ' + project.name;
+  card.appendChild(h3);
+
+  const sub = document.createElement('p');
+  sub.className = 'sc-sub';
+  sub.textContent = project.people.length + ' nhân sự tham gia';
+  card.appendChild(sub);
+
+  if (!project.people.length) {
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:12px;color:var(--text-muted);margin:0';
+    p.textContent = 'Chưa có dữ liệu nhân sự cho dự án này.';
+    card.appendChild(p);
+    return card;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'staff-table';
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th>Nhân sự</th>' + STAFF_PHASES.map(ph => `<th>${ph.label}</th>`).join('') + '</tr>';
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  project.people.forEach(p => {
+    const displayName = p.fullname || p.nickname;
+    const tr = document.createElement('tr');
+    const nameTd = document.createElement('td');
+    const roleLine = p.role || (p.fullname ? '' : 'chưa khớp hồ sơ nhân sự');
+    const noteLine = p.note ? `<div class="staff-note">${p.note}</div>` : '';
+    nameTd.innerHTML = `<div class="staff-name">${displayName}</div><div class="staff-role">${roleLine}</div>${noteLine}`;
+    tr.appendChild(nameTd);
+    STAFF_PHASES.forEach(ph => {
+      const td = document.createElement('td');
+      const pct = Math.round((p[ph.key] || 0) * 100);
+      const cell = document.createElement('div');
+      cell.className = 'staff-cell';
+      cell.innerHTML = `<div class="staff-bar-track"><div class="staff-bar-fill" style="width:${pct}%"></div></div><div class="staff-pct${pct===0?' zero':''}">${pct}%</div>`;
+      cell.addEventListener('mousemove', (e) => showTip(e, `<b>${displayName} — ${ph.label}</b><br>Hệ số thời gian: ${pct}%`));
+      cell.addEventListener('mouseleave', hideTip);
+      td.appendChild(cell);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'staff-table-scroll';
+  scrollWrap.appendChild(table);
+  card.appendChild(scrollWrap);
+  return card;
+}
+
+function buildStaffAgg(){
+  const byPerson = {};
+  const order = [];
+  STAFFING.forEach(proj => {
+    proj.people.forEach(p => {
+      const id = p.fullname || ('__' + p.nickname);
+      if (!byPerson[id]) {
+        byPerson[id] = { fullname: p.fullname, nickname: p.nickname, role: p.role, note: p.note, projects: [] };
+        order.push(id);
+      }
+      if (!byPerson[id].note && p.note) byPerson[id].note = p.note;
+      const activePhases = STAFF_PHASES.map(ph => p[ph.key] || 0).filter(v => v > 0);
+      const avg = activePhases.length ? activePhases.reduce((a,b) => a+b, 0) / activePhases.length : 0;
+      byPerson[id].projects.push({ key: proj.key, name: proj.name, avg });
+    });
+  });
+  order.sort((a, b) => byPerson[b].projects.length - byPerson[a].projects.length);
+
+  const tbody = document.getElementById('f4AggTableBody');
+  tbody.innerHTML = '';
+  order.forEach(id => {
+    const person = byPerson[id];
+    const displayName = person.fullname || person.nickname;
+    const pillsHtml = person.projects
+      .map(pr => `<span class="staff-proj-pill">${pr.name} · <b>${Math.round(pr.avg*100)}%</b></span>`)
+      .join('');
+    const tr = document.createElement('tr');
+    const aggNoteHtml = person.note ? `<div class="staff-note">${person.note}</div>` : '';
+    tr.innerHTML = `
+      <td><div class="staff-name">${displayName}</div>${!person.fullname ? '<div class="staff-role">chưa khớp hồ sơ nhân sự</div>' : ''}${aggNoteHtml}</td>
+      <td>${person.role || '—'}</td>
+      <td style="text-align:center">${person.projects.length}</td>
+      <td><div class="staff-proj-pills">${pillsHtml}</div></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+const f4Cards = document.getElementById('f4Cards');
+STAFFING.forEach(proj => f4Cards.appendChild(buildStaffCard(proj)));
+buildStaffAgg();
+
+// ---- Folder 4, tab "Chi tiết đầy đủ (Excel)": replica of sheet TongHopLuongThuong_NhanSu ----
+function fmtMoneyOrDash(n){
+  if (!n) return '—';
+  return fmtFull(n);
+}
+function renderPayrollTable(){
+  document.getElementById('f4PayrollCaption').textContent = PAYROLL_TABLE.title + ' (đơn vị: VNĐ)';
+  const tbody = document.getElementById('f4PayrollTableBody');
+  tbody.innerHTML = '';
+  PAYROLL_TABLE.rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.stt}</td>
+      <td>${r.ma_nv}</td>
+      <td>${r.ho_ten}</td>
+      <td>${r.nam_sinh}</td>
+      <td>${r.ngay_vao}</td>
+      <td>${r.ngay_ket_thuc || '—'}</td>
+      <td>${fmtMoneyOrDash(r.y2025.tong_luong)}</td>
+      <td>${fmtMoneyOrDash(r.y2025.thuong_sn)}</td>
+      <td>${fmtMoneyOrDash(r.y2025.thuong_da)}</td>
+      <td>${fmtMoneyOrDash(r.y2025.thuong_tet_tay)}</td>
+      <td>${fmtMoneyOrDash(r.y2025.thuong_tet_ta)}</td>
+      <td><b>${fmtMoneyOrDash(r.y2025.tong_cong)}</b></td>
+      <td>${fmtMoneyOrDash(r.y2026.tong_luong)}</td>
+      <td>${fmtMoneyOrDash(r.y2026.thuong_sn)}</td>
+      <td>${fmtMoneyOrDash(r.y2026.thuong_da)}</td>
+      <td>${fmtMoneyOrDash(r.y2026.thuong_tet_tay)}</td>
+      <td>${fmtMoneyOrDash(r.y2026.thuong_tet_ta)}</td>
+      <td><b>${fmtMoneyOrDash(r.y2026.tong_cong)}</b></td>
+      <td>${fmtPct(r.ty_le)}</td>
+      <td>${fmtMoneyOrDash(r.bhxh)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  const t = PAYROLL_TABLE.total;
+  document.getElementById('f4PayrollTableFoot').innerHTML = `
+    <tr>
+      <td colspan="6">TỔNG CỘNG</td>
+      <td>${fmtMoneyOrDash(t.y2025.tong_luong)}</td>
+      <td>—</td><td>—</td><td>—</td><td>—</td>
+      <td>${fmtMoneyOrDash(t.y2025.tong_cong)}</td>
+      <td>${fmtMoneyOrDash(t.y2026.tong_luong)}</td>
+      <td>—</td><td>—</td><td>—</td><td>—</td>
+      <td>${fmtMoneyOrDash(t.y2026.tong_cong)}</td>
+      <td>—</td>
+      <td>${fmtMoneyOrDash(t.bhxh)}</td>
+    </tr>
+  `;
+}
+renderPayrollTable();
+
+// ============================================================
+// Editable page title / subtitle — persisted per-browser via localStorage
+// ============================================================
+function wireEditableText(elId, storageKey, defaultText){
+  const el = document.getElementById(elId);
+  if (!el) return;
+  let saved = '';
+  try { saved = localStorage.getItem(storageKey) || ''; } catch(e){}
+  if (saved) el.textContent = saved;
+  let timer;
+  el.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const val = el.textContent.trim();
+      try {
+        if (val) localStorage.setItem(storageKey, val);
+        else localStorage.removeItem(storageKey);
+      } catch(e){}
+    }, 400);
+  });
+  // Enter should not insert a newline in a single-line title/subtitle — blur instead
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+  });
+  // paste as plain text only
+  el.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  });
+  el.addEventListener('blur', () => {
+    if (!el.textContent.trim()) el.textContent = defaultText;
+  });
+}
+wireEditableText('pageTitle', 'projDash_pageTitle', 'Dashboard Tài chính Công ty');
+wireEditableText('pageSubtitle', 'projDash_pageSubtitle', 'Chi phí dự án · Báo cáo thu chi · Dòng tiền tài chính — cập nhật 17/08/2026');
+
+// ============================================================
+// Notes (Folder 2 & 3) — persisted per-browser via localStorage
+// ============================================================
+function wireNotes(textareaId, stateId, storageKey){
+  const el = document.getElementById(textareaId);
+  const state = document.getElementById(stateId);
+  try { el.value = localStorage.getItem(storageKey) || ''; } catch(e){}
+  let timer;
+  el.addEventListener('input', () => {
+    clearTimeout(timer);
+    state.textContent = 'Đang lưu…';
+    timer = setTimeout(() => {
+      try {
+        localStorage.setItem(storageKey, el.value);
+        state.textContent = 'Đã lưu trên trình duyệt này lúc ' + new Date().toLocaleTimeString('vi-VN');
+      } catch(e){
+        state.textContent = 'Không thể lưu (bộ nhớ trình duyệt bị chặn)';
+      }
+    }, 500);
+  });
+}
+wireNotes('f2Notes', 'f2NotesState', 'projDash_notes_folder2');
+wireNotes('f3Notes', 'f3NotesState', 'projDash_notes_folder3');
+wireNotes('f4Notes', 'f4NotesState', 'projDash_notes_folder4');
+
+// ============================================================
+// Theme toggle
+// ============================================================
+const themeToggle = document.getElementById('themeToggle');
+const root = document.documentElement;
+function applyTheme(t){
+  if (t) root.setAttribute('data-theme', t);
+  else root.removeAttribute('data-theme');
+  themeToggle.textContent = (t === 'dark') ? '☀️ Chế độ sáng' : '🌙 Chế độ tối';
+}
+let current = null;
+themeToggle.addEventListener('click', () => {
+  current = current === 'dark' ? 'light' : 'dark';
+  applyTheme(current);
+  // re-render charts so inline var(--...) colors are re-read by the browser (SVG currentColor/var already
+  // updates live via CSS custom properties — no rebuild needed, but tooltip/legend swatches use var() too)
+});
+applyTheme(null);
+
+// ============================================================
+// Simple client-side password gate (soft protection, not cryptographic-grade —
+// the password is stored as a SHA-256 hash so casual "view source" doesn't reveal it directly,
+// but this is still not a substitute for real server-side access control).
+// ============================================================
+const GATE_HASH = "cea9053574ea1505aa3ed9b95933d7e818637eeefdec06c95ea8612038c78960";
+const gatePasswordInput = document.getElementById('gatePassword');
+const gateSubmit = document.getElementById('gateSubmit');
+const gateError = document.getElementById('gateError');
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function tryUnlock(){
+  const hash = await sha256Hex(gatePasswordInput.value);
+  if (hash === GATE_HASH) {
+    document.body.classList.remove('locked');
+  } else {
+    gateError.textContent = 'Sai mật khẩu, vui lòng thử lại.';
+    gatePasswordInput.value = '';
+    gatePasswordInput.focus();
+  }
+}
+gateSubmit.addEventListener('click', tryUnlock);
+gatePasswordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+
+</script>
+</body>
+</html>
